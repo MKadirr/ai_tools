@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini Quiz</title>
+<style>
+  :root{
+    --bg: #faf9f6;
+    --card-bg: #ffffff;
+    --text: #1f2430;
+    --muted: #6b7280;
+    --border: #e3e1da;
+    --accent: #4f46e5;
+    --accent-light: #eef2ff;
+    --correct: #16a34a;
+    --correct-bg: #ecfdf3;
+    --incorrect: #dc2626;
+    --incorrect-bg: #fef2f2;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.45;
+  }
+
+  .wrap{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  h1{
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+  }
+
+  h2{
+    font-size: 1.05rem;
+    margin: 28px 0 12px;
+  }
+
+  p.subtitle{
+    color: var(--muted);
+    margin: 0 0 24px;
+    font-size: .92rem;
+  }
+
+  nav.tabs{
+    display:flex;
+    gap:8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  nav.tabs button{
+    background: none;
+    border: none;
+    padding: 10px 4px;
+    margin-right: 16px;
+    font-size: .95rem;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+
+  nav.tabs button.active{
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+
+  button{
+    font-family: inherit;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  label.file-label:focus-within{
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .btn{
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: .9rem;
+    cursor: pointer;
+  }
+
+  .btn:hover{ opacity: .92; }
+
+  .btn.secondary{
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn.ghost{
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .btn.danger{
+    background: none;
+    border: 1px solid var(--incorrect);
+    color: var(--incorrect);
+  }
+
+  .btn.small{
+    padding: 5px 10px;
+    font-size: .8rem;
+    border-radius: 6px;
+  }
+
+  .toolbar{
+    display:flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  label.file-label{
+    display:inline-flex;
+    align-items:center;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: .9rem;
+    cursor: pointer;
+  }
+  label.file-label:hover{ border-color: var(--accent); }
+
+  form#question-form{
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  form#question-form label{
+    display:block;
+    font-size: .82rem;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  input[type="text"], select{
+    display:block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: .92rem;
+    color: var(--text);
+    background: #fff;
+  }
+
+  .choice-row, .answer-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .choice-row input[type="text"], .answer-row input[type="text"]{
+    margin-top:0;
+    flex: 1;
+  }
+
+  .choice-row input[type="radio"], .choice-row input[type="checkbox"]{
+    flex-shrink: 0;
+    width: 17px;
+    height: 17px;
+  }
+
+  .remove-row{
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+  .remove-row:hover{ color: var(--incorrect); }
+
+  .add-row-btn{
+    background: none;
+    border: 1px dashed var(--border);
+    color: var(--accent);
+    border-radius: 7px;
+    padding: 7px 12px;
+    font-size: .85rem;
+    cursor: pointer;
+    margin-top: 2px;
+  }
+
+  .case-sensitive-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    font-size: .85rem;
+    color: var(--text);
+    margin-top: 4px;
+  }
+  .case-sensitive-row input{ width:16px; height:16px; }
+
+  .form-actions{
+    display:flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .cards{
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .q-card{
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .q-card-head{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .q-card-head p.q-title{
+    margin: 0;
+    font-weight: 600;
+    font-size: .95rem;
+  }
+
+  .q-card .q-type-tag{
+    display:inline-block;
+    font-size: .72rem;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 6px;
+  }
+
+  .q-card ul{
+    margin: 10px 0 0;
+    padding-left: 18px;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
+  .q-card ul li.is-right{
+    color: var(--correct);
+    font-weight: 600;
+  }
+
+  .q-card p.q-meta{
+    font-size: .82rem;
+    color: var(--muted);
+    margin: 8px 0 0;
+  }
+
+  .q-card-actions{
+    display:flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .empty-state{
+    color: var(--muted);
+    font-size: .9rem;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    text-align: center;
+  }
+
+  /* --- Mode lancer --- */
+
+  #play-intro{
+    text-align:center;
+    padding: 40px 0;
+  }
+
+  .score-banner{
+    background: var(--accent-light);
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .score-banner .score-num{
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .quiz-question{
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+
+  .quiz-question.is-correct{
+    border-color: var(--correct);
+    background: var(--correct-bg);
+  }
+  .quiz-question.is-incorrect{
+    border-color: var(--incorrect);
+    background: var(--incorrect-bg);
+  }
+
+  .quiz-question p.q-number{
+    margin: 0 0 4px;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--muted);
+  }
+
+  .quiz-question p.q-text{
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+
+  .quiz-option{
+    display:flex;
+    align-items:center;
+    gap: 9px;
+    padding: 7px 0;
+    font-size: .92rem;
+  }
+
+  .quiz-option input{
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+  }
+
+  .quiz-question input[type="text"]{
+    margin-top: 0;
+  }
+
+  p.feedback{
+    margin: 10px 0 0;
+    font-size: .85rem;
+    font-weight: 600;
+  }
+  .is-correct p.feedback{ color: var(--correct); }
+  .is-incorrect p.feedback{ color: var(--incorrect); }
+
+  #validate-btn{
+    width: 100%;
+    padding: 12px;
+    font-size: .95rem;
+    margin-top: 6px;
+  }
+
+  [hidden]{ display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Mini Quiz</h1>
+  <p class="subtitle">Éditez vos questions puis lancez le quiz.</p>
+
+  <nav class="tabs">
+    <button type="button" id="btn-nav-edit" class="active">Éditer</button>
+    <button type="button" id="btn-nav-play">Lancer</button>
+  </nav>
+
+  <!-- ===================== VUE EDITION ===================== -->
+  <section id="view-edit">
+
+    <div class="toolbar">
+      <label class="file-label" tabindex="0">
+        Charger un JSON
+        <input type="file" id="file-input" accept="application/json" hidden>
+      </label>
+      <button type="button" class="btn secondary" id="export-btn">Exporter le JSON</button>
+    </div>
+
+    <form id="question-form">
+      <h2 id="form-title" style="margin-top:0;">Ajouter une question</h2>
+
+      <label>Intitulé de la question
+        <input type="text" id="q-text" required placeholder="Ex : Quelle est la capitale de la France ?">
+      </label>
+
+      <label>Type de question
+        <select id="q-type">
+          <option value="qcm_simple">Choix multiple — une seule réponse</option>
+          <option value="qcm_multiple">Choix multiple — plusieurs réponses</option>
+          <option value="texte_libre">Réponse libre (texte)</option>
+        </select>
+      </label>
+
+      <div id="q-fields"></div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn" id="submit-btn">Ajouter la question</button>
+        <button type="button" class="btn ghost" id="cancel-edit-btn" hidden>Annuler</button>
+      </div>
+    </form>
+
+    <h2>Questions (<span id="question-count">0</span>)</h2>
+    <div id="questions-list" class="cards"></div>
+  </section>
+
+  <!-- ===================== VUE LANCER ===================== -->
+  <section id="view-play" hidden>
+
+    <div id="play-intro">
+      <button type="button" class="btn" id="start-quiz-btn">Lancer le quiz</button>
+    </div>
+
+    <div id="quiz-result" hidden></div>
+
+    <form id="quiz-form" hidden>
+      <div id="quiz-questions"></div>
+      <button type="submit" class="btn" id="validate-btn">Valider</button>
+    </form>
+
+  </section>
+
+</div>
+
+<script>
+(function(){
+
+  /* ---------------------------------------------------------------
+     ETAT
+  --------------------------------------------------------------- */
+  let questions = [];      // questions actuellement chargées/éditées
+  let editingIndex = null; // index en cours d'édition, ou null
+  let runtimeQuestions = []; // copie mélangée utilisée pendant le quiz
+
+  /* ---------------------------------------------------------------
+     ELEMENTS
+  --------------------------------------------------------------- */
+  const navEditBtn = document.getElementById('btn-nav-edit');
+  const navPlayBtn = document.getElementById('btn-nav-play');
+  const viewEdit = document.getElementById('view-edit');
+  const viewPlay = document.getElementById('view-play');
+
+  const fileInput = document.getElementById('file-input');
+  const exportBtn = document.getElementById('export-btn');
+
+  const form = document.getElementById('question-form');
+  const formTitle = document.getElementById('form-title');
+  const qTextInput = document.getElementById('q-text');
+  const qTypeSelect = document.getElementById('q-type');
+  const qFields = document.getElementById('q-fields');
+  const submitBtn = document.getElementById('submit-btn');
+  const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+  const questionsList = document.getElementById('questions-list');
+  const questionCount = document.getElementById('question-count');
+
+  const playIntro = document.getElementById('play-intro');
+  const startQuizBtn = document.getElementById('start-quiz-btn');
+  const quizForm = document.getElementById('quiz-form');
+  const quizQuestions = document.getElementById('quiz-questions');
+  const quizResult = document.getElementById('quiz-result');
+  const validateBtn = document.getElementById('validate-btn');
+
+  /* ---------------------------------------------------------------
+     NAVIGATION ENTRE LES VUES
+  --------------------------------------------------------------- */
+  function showView(name){
+    const isEdit = name === 'edit';
+    viewEdit.hidden = !isEdit;
+    viewPlay.hidden = isEdit;
+    navEditBtn.classList.toggle('active', isEdit);
+    navPlayBtn.classList.toggle('active', !isEdit);
+  }
+  navEditBtn.addEventListener('click', () => showView('edit'));
+  navPlayBtn.addEventListener('click', () => showView('play'));
+
+  /* ---------------------------------------------------------------
+     UTILITAIRES
+  --------------------------------------------------------------- */
+  function shuffle(arr){
+    const a = [...arr];
+    for(let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  const TYPE_LABELS = {
+    qcm_simple: 'Choix multiple — une réponse',
+    qcm_multiple: 'Choix multiple — plusieurs réponses',
+    texte_libre: 'Réponse libre'
+  };
+
+  /* ---------------------------------------------------------------
+     FORMULAIRE — CHAMPS DYNAMIQUES SELON LE TYPE
+  --------------------------------------------------------------- */
+  function buildChoiceRow(text, correct, multiple){
+    const row = document.createElement('div');
+    row.className = 'choice-row';
+
+    const correctInput = document.createElement('input');
+    correctInput.type = multiple ? 'checkbox' : 'radio';
+    correctInput.name = 'choice-correct';
+    correctInput.className = 'choice-correct';
+    correctInput.checked = !!correct;
+    correctInput.title = 'Marquer comme bonne réponse';
+
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.className = 'choice-text';
+    textInput.placeholder = 'Texte du choix';
+    textInput.value = text || '';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-row';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', () => row.remove());
+
+    row.append(correctInput, textInput, removeBtn);
+    return row;
+  }
+
+  function buildAnswerRow(text){
+    const row = document.createElement('div');
+    row.className = 'answer-row';
+
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.className = 'answer-text';
+    textInput.placeholder = 'Réponse acceptée';
+    textInput.value = text || '';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-row';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', () => row.remove());
+
+    row.append(textInput, removeBtn);
+    return row;
+  }
+
+  function renderQFields(type, data){
+    data = data || {};
+    qFields.innerHTML = '';
+
+    if(type === 'qcm_simple' || type === 'qcm_multiple'){
+      const multiple = type === 'qcm_multiple';
+
+      const container = document.createElement('div');
+      container.id = 'choices-container';
+
+      const choix = data.choix && data.choix.length ? data.choix : ['', ''];
+      const correctSet = multiple
+        ? new Set(data.reponses || [])
+        : new Set(data.reponse !== undefined ? [data.reponse] : []);
+
+      choix.forEach((c, i) => container.appendChild(buildChoiceRow(c, correctSet.has(i), multiple)));
+
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'add-row-btn';
+      addBtn.textContent = '+ Ajouter un choix';
+      addBtn.addEventListener('click', () => container.appendChild(buildChoiceRow('', false, multiple)));
+
+      qFields.append(container, addBtn);
+
+    } else if(type === 'texte_libre'){
+      const container = document.createElement('div');
+      container.id = 'answers-container';
+
+      const reponses = data.reponses && data.reponses.length ? data.reponses : [''];
+      reponses.forEach(r => container.appendChild(buildAnswerRow(r)));
+
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'add-row-btn';
+      addBtn.textContent = '+ Ajouter une réponse acceptée';
+      addBtn.addEventListener('click', () => container.appendChild(buildAnswerRow('')));
+
+      const csRow = document.createElement('label');
+      csRow.className = 'case-sensitive-row';
+      const csInput = document.createElement('input');
+      csInput.type = 'checkbox';
+      csInput.id = 'case-sensitive-checkbox';
+      csInput.checked = !!data.caseSensitive;
+      csRow.append(csInput, document.createTextNode('Sensible à la casse'));
+
+      qFields.append(container, addBtn, csRow);
+    }
+  }
+
+  qTypeSelect.addEventListener('change', () => renderQFields(qTypeSelect.value, {}));
+  renderQFields(qTypeSelect.value, {});
+
+  /* ---------------------------------------------------------------
+     LECTURE DES DONNEES DU FORMULAIRE
+  --------------------------------------------------------------- */
+  function gatherFormData(type){
+    if(type === 'qcm_simple' || type === 'qcm_multiple'){
+      const rows = [...qFields.querySelectorAll('.choice-row')];
+      const choix = rows.map(r => r.querySelector('.choice-text').value.trim());
+      const validRows = rows.map((r, i) => ({ i, empty: choix[i] === '' }));
+
+      if(choix.filter(c => c !== '').length < 2){
+        alert('Merci de saisir au moins 2 choix.');
+        return null;
+      }
+
+      if(type === 'qcm_simple'){
+        const idx = rows.findIndex(r => r.querySelector('.choice-correct').checked);
+        if(idx === -1){
+          alert('Merci de sélectionner la bonne réponse.');
+          return null;
+        }
+        return { choix, reponse: idx };
+      } else {
+        const reponses = rows
+          .map((r, i) => r.querySelector('.choice-correct').checked ? i : null)
+          .filter(i => i !== null);
+        if(reponses.length === 0){
+          alert('Merci de sélectionner au moins une bonne réponse.');
+          return null;
+        }
+        return { choix, reponses };
+      }
+    }
+
+    if(type === 'texte_libre'){
+      const rows = [...qFields.querySelectorAll('.answer-row')];
+      const reponses = rows.map(r => r.querySelector('.answer-text').value.trim()).filter(v => v !== '');
+      if(reponses.length === 0){
+        alert('Merci de saisir au moins une réponse acceptée.');
+        return null;
+      }
+      const caseSensitive = document.getElementById('case-sensitive-checkbox').checked;
+      return { reponses, caseSensitive };
+    }
+
+    return null;
+  }
+
+  /* ---------------------------------------------------------------
+     SOUMISSION DU FORMULAIRE (AJOUT / MODIFICATION)
+  --------------------------------------------------------------- */
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const qText = qTextInput.value.trim();
+    const type = qTypeSelect.value;
+    if(qText === ''){
+      alert('Merci de saisir l\'intitulé de la question.');
+      return;
+    }
+
+    const data = gatherFormData(type);
+    if(!data) return;
+
+    const question = { question: qText, type, data };
+
+    if(editingIndex !== null){
+      questions[editingIndex] = question;
+    } else {
+      questions.push(question);
+    }
+
+    resetForm();
+    renderQuestionsList();
+  });
+
+  function resetForm(){
+    editingIndex = null;
+    form.reset();
+    renderQFields(qTypeSelect.value, {});
+    formTitle.textContent = 'Ajouter une question';
+    submitBtn.textContent = 'Ajouter la question';
+    cancelEditBtn.hidden = true;
+  }
+
+  cancelEditBtn.addEventListener('click', resetForm);
+
+  /* ---------------------------------------------------------------
+     LISTE DES QUESTIONS (CARTES)
+  --------------------------------------------------------------- */
+  function renderQuestionsList(){
+    questionCount.textContent = questions.length;
+    questionsList.innerHTML = '';
+
+    if(questions.length === 0){
+      questionsList.innerHTML = '<div class="empty-state">Aucune question pour l\'instant. Ajoutez-en une via le formulaire ou chargez un fichier JSON.</div>';
+      return;
+    }
+
+    questions.forEach((q, i) => {
+      const card = document.createElement('div');
+      card.className = 'q-card';
+
+      let detailsHtml = '';
+      if(q.type === 'qcm_simple' || q.type === 'qcm_multiple'){
+        const correctSet = q.type === 'qcm_simple' ? new Set([q.data.reponse]) : new Set(q.data.reponses);
+        detailsHtml = '<ul>' + q.data.choix.map((c, idx) =>
+          `<li class="${correctSet.has(idx) ? 'is-right' : ''}">${escapeHtml(c)}${correctSet.has(idx) ? ' ✓' : ''}</li>`
+        ).join('') + '</ul>';
+      } else if(q.type === 'texte_libre'){
+        detailsHtml = `<p class="q-meta">Réponses acceptées : ${q.data.reponses.map(escapeHtml).join(', ')}`
+          + (q.data.caseSensitive ? ' (sensible à la casse)' : '') + '</p>';
+      }
+
+      card.innerHTML = `
+        <div class="q-card-head">
+          <div>
+            <p class="q-title">${escapeHtml(q.question)}</p>
+            <span class="q-type-tag">${TYPE_LABELS[q.type]}</span>
+          </div>
+          <div class="q-card-actions">
+            <button type="button" class="btn ghost small" data-action="edit" data-index="${i}">Modifier</button>
+            <button type="button" class="btn danger small" data-action="delete" data-index="${i}">Supprimer</button>
+          </div>
+        </div>
+        ${detailsHtml}
+      `;
+      questionsList.appendChild(card);
+    });
+  }
+
+  questionsList.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+    const index = Number(btn.dataset.index);
+    const action = btn.dataset.action;
+
+    if(action === 'delete'){
+      if(confirm('Supprimer cette question ?')){
+        questions.splice(index, 1);
+        if(editingIndex === index) resetForm();
+        renderQuestionsList();
+      }
+    } else if(action === 'edit'){
+      editingIndex = index;
+      const q = questions[index];
+      qTextInput.value = q.question;
+      qTypeSelect.value = q.type;
+      renderQFields(q.type, q.data);
+      formTitle.textContent = 'Modifier la question';
+      submitBtn.textContent = 'Mettre à jour';
+      cancelEditBtn.hidden = false;
+      form.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+
+  /* ---------------------------------------------------------------
+     IMPORT / EXPORT JSON
+  --------------------------------------------------------------- */
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const parsed = JSON.parse(reader.result);
+        if(!parsed || !Array.isArray(parsed.questions)){
+          throw new Error('Format invalide : un champ "questions" (tableau) est attendu.');
+        }
+        questions = parsed.questions;
+        resetForm();
+        renderQuestionsList();
+      } catch(err){
+        alert('Impossible de charger ce fichier : ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    fileInput.value = '';
+  });
+
+  exportBtn.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ questions }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'questions.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  /* ---------------------------------------------------------------
+     MODE LANCER — PREPARATION DU QUIZ
+  --------------------------------------------------------------- */
+  function buildRuntimeQuestion(q, runtimeId){
+    if(q.type === 'texte_libre'){
+      return { runtimeId, question: q.question, type: q.type, data: q.data };
+    }
+    const correctSet = q.type === 'qcm_simple' ? new Set([q.data.reponse]) : new Set(q.data.reponses);
+    const choices = shuffle(q.data.choix.map((text, i) => ({ text, correct: correctSet.has(i) })));
+    return { runtimeId, question: q.question, type: q.type, choices };
+  }
+
+  function startQuiz(){
+    if(questions.length === 0){
+      alert('Ajoutez ou chargez des questions avant de lancer le quiz.');
+      return;
+    }
+
+    runtimeQuestions = shuffle(questions).map((q, i) => buildRuntimeQuestion(q, i));
+
+    quizQuestions.innerHTML = '';
+    runtimeQuestions.forEach((rq, i) => {
+      const block = document.createElement('div');
+      block.className = 'quiz-question';
+      block.dataset.id = rq.runtimeId;
+
+      let inputsHtml = '';
+      if(rq.type === 'qcm_simple'){
+        inputsHtml = rq.choices.map((c, ci) => `
+          <label class="quiz-option">
+            <input type="radio" name="q${rq.runtimeId}" value="${ci}">
+            ${escapeHtml(c.text)}
+          </label>
+        `).join('');
+      } else if(rq.type === 'qcm_multiple'){
+        inputsHtml = rq.choices.map((c, ci) => `
+          <label class="quiz-option">
+            <input type="checkbox" name="q${rq.runtimeId}" value="${ci}">
+            ${escapeHtml(c.text)}
+          </label>
+        `).join('');
+      } else {
+        inputsHtml = `<input type="text" name="q${rq.runtimeId}" placeholder="Votre réponse">`;
+      }
+
+      block.innerHTML = `
+        <p class="q-number">Question ${i + 1} / ${runtimeQuestions.length}</p>
+        <p class="q-text">${escapeHtml(rq.question)}</p>
+        ${inputsHtml}
+      `;
+      quizQuestions.appendChild(block);
+    });
+
+    playIntro.hidden = true;
+    quizResult.hidden = true;
+    quizForm.hidden = false;
+    validateBtn.hidden = false;
+    validateBtn.textContent = 'Valider';
+  }
+
+  startQuizBtn.addEventListener('click', startQuiz);
+
+  /* ---------------------------------------------------------------
+     MODE LANCER — VALIDATION
+  --------------------------------------------------------------- */
+  quizForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    let score = 0;
+
+    runtimeQuestions.forEach(rq => {
+      const block = quizQuestions.querySelector(`.quiz-question[data-id="${rq.runtimeId}"]`);
+      let isCorrect = false;
+      let correctText = '';
+
+      if(rq.type === 'texte_libre'){
+        const input = block.querySelector('input[type="text"]');
+        const val = input.value.trim();
+        const cs = rq.data.caseSensitive;
+        isCorrect = rq.data.reponses.some(r => cs ? r === val : r.toLowerCase() === val.toLowerCase());
+        correctText = rq.data.reponses.join(' / ');
+        input.disabled = true;
+
+      } else if(rq.type === 'qcm_simple'){
+        const checked = block.querySelector('input[type="radio"]:checked');
+        const selected = checked ? Number(checked.value) : null;
+        isCorrect = selected !== null && rq.choices[selected].correct;
+        correctText = rq.choices.filter(c => c.correct).map(c => c.text).join(', ');
+        block.querySelectorAll('input').forEach(i => i.disabled = true);
+
+      } else {
+        const checked = [...block.querySelectorAll('input[type="checkbox"]:checked')].map(i => Number(i.value));
+        const correctIdx = rq.choices.map((c, i) => c.correct ? i : null).filter(i => i !== null);
+        isCorrect = checked.length === correctIdx.length && checked.every(i => correctIdx.includes(i));
+        correctText = rq.choices.filter(c => c.correct).map(c => c.text).join(', ');
+        block.querySelectorAll('input').forEach(i => i.disabled = true);
+      }
+
+      if(isCorrect) score++;
+      block.classList.add(isCorrect ? 'is-correct' : 'is-incorrect');
+
+      const feedback = document.createElement('p');
+      feedback.className = 'feedback';
+      feedback.textContent = isCorrect ? '✓ Correct' : `✕ Incorrect — réponse attendue : ${correctText}`;
+      block.appendChild(feedback);
+    });
+
+    const total = runtimeQuestions.length;
+    const pct = Math.round((score / total) * 100);
+    quizResult.innerHTML = `
+      <div class="score-banner">
+        <div class="score-num">${score} / ${total}</div>
+        <div>${pct}% de bonnes réponses</div>
+      </div>
+    `;
+    quizResult.hidden = false;
+    validateBtn.hidden = true;
+  });
+
+  /* ---------------------------------------------------------------
+     RELANCER LE QUIZ APRES VALIDATION (clic sur "Lancer" dans la nav
+     ou sur le bouton lui repasse par startQuiz pour un nouveau mélange)
+  --------------------------------------------------------------- */
+  navPlayBtn.addEventListener('click', () => {
+    if(!quizForm.hidden && validateBtn.hidden){
+      // un quiz vient d'être validé : on revient à l'écran d'intro
+      quizForm.hidden = true;
+      quizResult.hidden = true;
+      playIntro.hidden = false;
+    }
+  });
+
+  /* ---------------------------------------------------------------
+     INITIALISATION
+  --------------------------------------------------------------- */
+  renderQuestionsList();
+
+})();
+</script>
+</body>
+</html>

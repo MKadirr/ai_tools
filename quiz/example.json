@@ -1,0 +1,44 @@
+{
+  "questions": [
+    {
+      "question": "Quelle est la capitale de la France ?",
+      "type": "qcm_simple",
+      "data": {
+        "choix": ["Paris", "Lyon", "Marseille", "Toulouse"],
+        "reponse": 0
+      }
+    },
+    {
+      "question": "Lesquels de ces langages sont utilisés pour le développement web front-end ?",
+      "type": "qcm_multiple",
+      "data": {
+        "choix": ["HTML", "Python", "CSS", "JavaScript", "C++"],
+        "reponses": [0, 2, 3]
+      }
+    },
+    {
+      "question": "Quelle est la formule chimique de l'eau ?",
+      "type": "texte_libre",
+      "data": {
+        "reponses": ["H2O", "h2o"],
+        "caseSensitive": false
+      }
+    },
+    {
+      "question": "Combien de continents compte la Terre ?",
+      "type": "qcm_simple",
+      "data": {
+        "choix": ["5", "6", "7", "8"],
+        "reponse": 2
+      }
+    },
+    {
+      "question": "Citez le symbole chimique de l'or (réponse en majuscules attendue).",
+      "type": "texte_libre",
+      "data": {
+        "reponses": ["Au"],
+        "caseSensitive": true
+      }
+    }
+  ]
+}
