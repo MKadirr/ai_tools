@@ -388,6 +388,25 @@
     padding: 40px 0;
   }
 
+  .quiz-count-label{
+    display:block;
+    font-size: .85rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+
+  .quiz-count-label input{
+    display:block;
+    margin: 8px auto 0;
+    width: 100px;
+    text-align: center;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: .95rem;
+    color: var(--text);
+  }
+
   .score-banner{
     background: var(--accent-light);
     border-radius: 12px;
@@ -399,6 +418,12 @@
     font-size: 1.6rem;
     font-weight: 700;
     color: var(--accent);
+  }
+
+  .score-banner .time-info{
+    font-size: .82rem;
+    color: var(--muted);
+    margin-top: 6px;
   }
 
   .quiz-question{
@@ -553,8 +578,8 @@
         Charger un JSON
         <input type="file" id="file-input" accept="application/json" hidden>
       </label>
-      <input type="text" id="export-filename" class="filename-input" placeholder="questions.json">
       <button type="button" class="btn secondary" id="export-btn">Exporter le JSON</button>
+      <input type="text" id="export-filename" class="filename-input" placeholder="questions.json">
     </div>
 
     <form id="question-form">
@@ -594,6 +619,9 @@
   <section id="view-play" hidden>
 
     <div id="play-intro">
+      <label class="quiz-count-label">Nombre de questions à tirer
+        <input type="number" id="quiz-count-input" min="1">
+      </label>
       <button type="button" class="btn" id="start-quiz-btn">Lancer le quiz</button>
     </div>
 
@@ -618,6 +646,7 @@
   let editingIndex = null; // index en cours d'édition, ou null
   let runtimeQuestions = []; // copie mélangée utilisée pendant le quiz
   let lastTrouMode = null; // mode ('libre'/'menu_deroulant') du dernier rendu des trous, pour préserver les valeurs
+  let quizStartTime = null; // horodatage de lancement du quiz, pour le chronomètre
 
   /* ---------------------------------------------------------------
      ELEMENTS
@@ -644,6 +673,7 @@
   const questionCount = document.getElementById('question-count');
 
   const playIntro = document.getElementById('play-intro');
+  const quizCountInput = document.getElementById('quiz-count-input');
   const startQuizBtn = document.getElementById('start-quiz-btn');
   const quizForm = document.getElementById('quiz-form');
   const quizQuestions = document.getElementById('quiz-questions');
@@ -684,6 +714,14 @@
   function autoResizeTextarea(el){
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
+  }
+
+  function formatDuration(ms){
+    const totalSeconds = Math.max(0, Math.round(ms / 1000));
+    const min = Math.floor(totalSeconds / 60);
+    const sec = totalSeconds % 60;
+    if(min === 0) return `${sec} s`;
+    return `${min} min ${String(sec).padStart(2, '0')} s`;
   }
 
   qTextInput.addEventListener('input', () => autoResizeTextarea(qTextInput));
@@ -1142,6 +1180,9 @@
     questionCount.textContent = questions.length;
     questionsList.innerHTML = '';
 
+    quizCountInput.max = questions.length || '';
+    quizCountInput.placeholder = questions.length ? `Toutes (${questions.length})` : 'Toutes';
+
     if(questions.length === 0){
       questionsList.innerHTML = '<div class="empty-state">Aucune question pour l\'instant. Ajoutez-en une via le formulaire ou chargez un fichier JSON.</div>';
       return;
@@ -1321,7 +1362,13 @@
       return;
     }
 
-    runtimeQuestions = shuffle(questions).map((q, i) => buildRuntimeQuestion(q, i));
+    const total = questions.length;
+    let count = parseInt(quizCountInput.value, 10);
+    if(isNaN(count) || count <= 0 || count > total) count = total;
+
+    const pool = shuffle(questions).slice(0, count);
+    runtimeQuestions = pool.map((q, i) => buildRuntimeQuestion(q, i));
+    quizStartTime = Date.now();
 
     quizQuestions.innerHTML = '';
     runtimeQuestions.forEach((rq, i) => {
@@ -1472,10 +1519,12 @@
 
     const total = runtimeQuestions.length;
     const pct = Math.round((score / total) * 100);
+    const elapsedMs = quizStartTime ? Date.now() - quizStartTime : 0;
     quizResult.innerHTML = `
       <div class="score-banner">
         <div class="score-num">${score} / ${total}</div>
         <div>${pct}% de bonnes réponses</div>
+        <div class="time-info">⏱ Temps : ${formatDuration(elapsedMs)}</div>
       </div>
     `;
     quizResult.hidden = false;
