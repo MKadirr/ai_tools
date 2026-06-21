@@ -142,6 +142,17 @@
   }
   label.file-label:hover{ border-color: var(--accent); }
 
+  .filename-input{
+    width: 180px;
+    margin-top: 0;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: .9rem;
+    background: #fff;
+    color: var(--text);
+  }
+
   form#question-form{
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -156,7 +167,7 @@
     margin-bottom: 14px;
   }
 
-  input[type="text"], select{
+  input[type="text"], select, textarea{
     display:block;
     width: 100%;
     margin-top: 6px;
@@ -166,6 +177,14 @@
     font-size: .92rem;
     color: var(--text);
     background: #fff;
+    font-family: inherit;
+  }
+
+  textarea{ resize: vertical; }
+
+  #q-text, #q-explanation{
+    resize: none;
+    overflow: hidden;
   }
 
   .choice-row, .answer-row{
@@ -248,6 +267,7 @@
     margin: 0;
     font-weight: 600;
     font-size: .95rem;
+    white-space: pre-wrap;
   }
 
   .q-card .q-type-tag{
@@ -276,6 +296,7 @@
     font-size: .82rem;
     color: var(--muted);
     margin: 8px 0 0;
+    white-space: pre-wrap;
   }
 
   .q-card-actions{
@@ -292,6 +313,73 @@
     padding: 22px;
     text-align: center;
   }
+
+  /* --- Édition : texte à trous --- */
+
+  .trou-hint{
+    font-size: .8rem;
+    color: var(--muted);
+    margin: 4px 0 10px;
+  }
+
+  .trou-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .trou-row .trou-label{
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+    min-width: 64px;
+  }
+
+  .trou-row input[type="text"]{
+    margin-top: 0;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .trou-cs-label{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    font-size: .8rem;
+    color: var(--text);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .trou-cs-label input{ width:16px; height:16px; }
+
+  /* --- Édition : ordre --- */
+
+  .order-row{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .order-row input[type="text"]{
+    margin-top: 0;
+    flex: 1;
+  }
+
+  .order-move{
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    color: var(--muted);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .order-move:hover{ border-color: var(--accent); color: var(--accent); }
 
   /* --- Mode lancer --- */
 
@@ -341,6 +429,7 @@
   .quiz-question p.q-text{
     margin: 0 0 12px;
     font-weight: 600;
+    white-space: pre-wrap;
   }
 
   .quiz-option{
@@ -368,6 +457,72 @@
   }
   .is-correct p.feedback{ color: var(--correct); }
   .is-incorrect p.feedback{ color: var(--incorrect); }
+
+  p.explanation{
+    margin: 6px 0 0;
+    font-size: .85rem;
+    color: var(--muted);
+    font-style: italic;
+    white-space: pre-wrap;
+  }
+
+  /* --- Quiz : texte à trous --- */
+
+  p.trou-render{
+    margin: 0;
+    line-height: 2.3;
+  }
+
+  .trou-input{
+    display: inline-block;
+    width: auto;
+    min-width: 110px;
+    margin: 0 3px;
+    padding: 3px 7px;
+    font-size: .92rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    vertical-align: middle;
+  }
+
+  /* --- Quiz : ordre --- */
+
+  .order-list{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .order-item{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    margin-bottom: 8px;
+    font-size: .92rem;
+  }
+
+  .order-controls{
+    display:flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .order-controls button{
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .order-controls button:hover{ border-color: var(--accent); color: var(--accent); }
+  .order-controls button:disabled{ opacity: .4; cursor: default; }
 
   #validate-btn{
     width: 100%;
@@ -398,6 +553,7 @@
         Charger un JSON
         <input type="file" id="file-input" accept="application/json" hidden>
       </label>
+      <input type="text" id="export-filename" class="filename-input" placeholder="questions.json">
       <button type="button" class="btn secondary" id="export-btn">Exporter le JSON</button>
     </div>
 
@@ -405,7 +561,7 @@
       <h2 id="form-title" style="margin-top:0;">Ajouter une question</h2>
 
       <label>Intitulé de la question
-        <input type="text" id="q-text" required placeholder="Ex : Quelle est la capitale de la France ?">
+        <textarea id="q-text" rows="2" required placeholder="Ex : Quelle est la capitale de la France ?"></textarea>
       </label>
 
       <label>Type de question
@@ -413,10 +569,16 @@
           <option value="qcm_simple">Choix multiple — une seule réponse</option>
           <option value="qcm_multiple">Choix multiple — plusieurs réponses</option>
           <option value="texte_libre">Réponse libre (texte)</option>
+          <option value="texte_a_trous">Texte à trous</option>
+          <option value="ordre">Remettre dans l'ordre</option>
         </select>
       </label>
 
       <div id="q-fields"></div>
+
+      <label>Message d'explication (optionnel)
+        <textarea id="q-explanation" rows="2" placeholder="Affiché après la correction, ex : un complément d'info ou une source."></textarea>
+      </label>
 
       <div class="form-actions">
         <button type="submit" class="btn" id="submit-btn">Ajouter la question</button>
@@ -455,6 +617,7 @@
   let questions = [];      // questions actuellement chargées/éditées
   let editingIndex = null; // index en cours d'édition, ou null
   let runtimeQuestions = []; // copie mélangée utilisée pendant le quiz
+  let lastTrouMode = null; // mode ('libre'/'menu_deroulant') du dernier rendu des trous, pour préserver les valeurs
 
   /* ---------------------------------------------------------------
      ELEMENTS
@@ -466,12 +629,14 @@
 
   const fileInput = document.getElementById('file-input');
   const exportBtn = document.getElementById('export-btn');
+  const exportFilenameInput = document.getElementById('export-filename');
 
   const form = document.getElementById('question-form');
   const formTitle = document.getElementById('form-title');
   const qTextInput = document.getElementById('q-text');
   const qTypeSelect = document.getElementById('q-type');
   const qFields = document.getElementById('q-fields');
+  const qExplanationInput = document.getElementById('q-explanation');
   const submitBtn = document.getElementById('submit-btn');
   const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
@@ -516,10 +681,20 @@
     return div.innerHTML;
   }
 
+  function autoResizeTextarea(el){
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+
+  qTextInput.addEventListener('input', () => autoResizeTextarea(qTextInput));
+  qExplanationInput.addEventListener('input', () => autoResizeTextarea(qExplanationInput));
+
   const TYPE_LABELS = {
     qcm_simple: 'Choix multiple — une réponse',
     qcm_multiple: 'Choix multiple — plusieurs réponses',
-    texte_libre: 'Réponse libre'
+    texte_libre: 'Réponse libre',
+    texte_a_trous: 'Texte à trous',
+    ordre: 'Remettre dans l\'ordre'
   };
 
   /* ---------------------------------------------------------------
@@ -572,6 +747,138 @@
     return row;
   }
 
+  function extractTrouIds(texte){
+    const ids = new Set();
+    const regex = /\{\{(\d+)\}\}/g;
+    let m;
+    while((m = regex.exec(texte)) !== null){ ids.add(Number(m[1])); }
+    return [...ids].sort((a, b) => a - b);
+  }
+
+  function buildTrouRow(id, mode, values){
+    values = values || {};
+    const row = document.createElement('div');
+    row.className = 'trou-row';
+    row.dataset.id = id;
+
+    const label = document.createElement('span');
+    label.className = 'trou-label';
+    label.textContent = `{{${id}}}`;
+    row.appendChild(label);
+
+    if(mode === 'libre'){
+      const reponsesInput = document.createElement('input');
+      reponsesInput.type = 'text';
+      reponsesInput.className = 'trou-reponses';
+      reponsesInput.placeholder = 'Réponses acceptées, séparées par une virgule';
+      reponsesInput.value = (values.reponses || []).join(', ');
+
+      const csLabel = document.createElement('label');
+      csLabel.className = 'trou-cs-label';
+      const csInput = document.createElement('input');
+      csInput.type = 'checkbox';
+      csInput.className = 'trou-cs';
+      csInput.checked = !!values.caseSensitive;
+      csLabel.append(csInput, document.createTextNode('Sensible à la casse'));
+
+      row.append(reponsesInput, csLabel);
+    } else {
+      const optionsInput = document.createElement('input');
+      optionsInput.type = 'text';
+      optionsInput.className = 'trou-options';
+      optionsInput.placeholder = 'Options séparées par une virgule';
+      optionsInput.value = (values.options || []).join(', ');
+
+      const reponseInput = document.createElement('input');
+      reponseInput.type = 'text';
+      reponseInput.className = 'trou-reponse';
+      reponseInput.placeholder = 'Réponse correcte (une des options)';
+      reponseInput.value = values.reponse || '';
+
+      row.append(optionsInput, reponseInput);
+    }
+
+    return row;
+  }
+
+  function readTrouRowValues(row, mode){
+    if(mode === 'libre'){
+      const reponses = row.querySelector('.trou-reponses').value.split(',').map(s => s.trim()).filter(s => s !== '');
+      const caseSensitive = row.querySelector('.trou-cs').checked;
+      return { reponses, caseSensitive };
+    }
+    const options = row.querySelector('.trou-options').value.split(',').map(s => s.trim()).filter(s => s !== '');
+    const reponse = row.querySelector('.trou-reponse').value.trim();
+    return { options, reponse };
+  }
+
+  function syncTrousContainer(preserve){
+    const texteInput = document.getElementById('trou-texte');
+    const modeSelect = document.getElementById('trou-mode');
+    const container = document.getElementById('trous-container');
+    if(!texteInput || !modeSelect || !container) return;
+    const mode = modeSelect.value;
+
+    let existingMap = {};
+    if(preserve && lastTrouMode === mode){
+      container.querySelectorAll('.trou-row').forEach(row => {
+        existingMap[row.dataset.id] = readTrouRowValues(row, mode);
+      });
+    }
+
+    const ids = extractTrouIds(texteInput.value);
+    container.innerHTML = '';
+    if(ids.length === 0){
+      const hint = document.createElement('p');
+      hint.className = 'trou-hint';
+      hint.textContent = 'Ajoutez {{1}}, {{2}}, ... dans le texte ci-dessus pour créer des trous.';
+      container.appendChild(hint);
+    } else {
+      ids.forEach(id => container.appendChild(buildTrouRow(id, mode, existingMap[id])));
+    }
+    lastTrouMode = mode;
+  }
+
+  function buildOrderRow(text){
+    const row = document.createElement('div');
+    row.className = 'order-row';
+
+    const upBtn = document.createElement('button');
+    upBtn.type = 'button';
+    upBtn.className = 'order-move';
+    upBtn.textContent = '▲';
+    upBtn.title = 'Monter';
+    upBtn.addEventListener('click', () => {
+      const prev = row.previousElementSibling;
+      if(prev) row.parentNode.insertBefore(row, prev);
+    });
+
+    const downBtn = document.createElement('button');
+    downBtn.type = 'button';
+    downBtn.className = 'order-move';
+    downBtn.textContent = '▼';
+    downBtn.title = 'Descendre';
+    downBtn.addEventListener('click', () => {
+      const next = row.nextElementSibling;
+      if(next) row.parentNode.insertBefore(next, row);
+    });
+
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.className = 'order-text';
+    textInput.placeholder = 'Élément';
+    textInput.value = text || '';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-row';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', () => row.remove());
+
+    row.append(upBtn, downBtn, textInput, removeBtn);
+    return row;
+  }
+
   function renderQFields(type, data){
     data = data || {};
     qFields.innerHTML = '';
@@ -619,6 +926,69 @@
       csRow.append(csInput, document.createTextNode('Sensible à la casse'));
 
       qFields.append(container, addBtn, csRow);
+
+    } else if(type === 'texte_a_trous'){
+      const modeLabel = document.createElement('label');
+      modeLabel.textContent = 'Mode de réponse';
+      const modeSelect = document.createElement('select');
+      modeSelect.id = 'trou-mode';
+      modeSelect.innerHTML = `
+        <option value="libre">Champs à remplir</option>
+        <option value="menu_deroulant">Menus déroulants</option>
+      `;
+      modeSelect.value = data.mode || 'libre';
+      modeLabel.appendChild(modeSelect);
+
+      const texteLabel = document.createElement('label');
+      texteLabel.textContent = 'Texte (utilisez {{1}}, {{2}}, ... pour les trous)';
+      const texteArea = document.createElement('textarea');
+      texteArea.id = 'trou-texte';
+      texteArea.rows = 3;
+      texteArea.placeholder = 'Le {{1}} est la capitale de la {{2}}.';
+      texteArea.value = data.texte || '';
+      texteLabel.appendChild(texteArea);
+
+      const trousContainer = document.createElement('div');
+      trousContainer.id = 'trous-container';
+
+      qFields.append(modeLabel, texteLabel, trousContainer);
+
+      // amorce initiale à partir des données existantes (cas édition)
+      const initialIds = extractTrouIds(texteArea.value);
+      if(initialIds.length === 0){
+        const hint = document.createElement('p');
+        hint.className = 'trou-hint';
+        hint.textContent = 'Ajoutez {{1}}, {{2}}, ... dans le texte ci-dessus pour créer des trous.';
+        trousContainer.appendChild(hint);
+      } else {
+        initialIds.forEach(id => {
+          const existing = (data.trous || []).find(t => Number(t.id) === id);
+          trousContainer.appendChild(buildTrouRow(id, modeSelect.value, existing));
+        });
+      }
+      lastTrouMode = modeSelect.value;
+
+      texteArea.addEventListener('input', () => syncTrousContainer(true));
+      modeSelect.addEventListener('change', () => syncTrousContainer(false));
+
+    } else if(type === 'ordre'){
+      const hint = document.createElement('p');
+      hint.className = 'trou-hint';
+      hint.textContent = 'L\'ordre ci-dessous (de haut en bas) est l\'ordre correct attendu.';
+
+      const container = document.createElement('div');
+      container.id = 'order-container';
+
+      const elements = data.elements && data.elements.length ? data.elements : ['', ''];
+      elements.forEach(el => container.appendChild(buildOrderRow(el)));
+
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'add-row-btn';
+      addBtn.textContent = '+ Ajouter un élément';
+      addBtn.addEventListener('click', () => container.appendChild(buildOrderRow('')));
+
+      qFields.append(hint, container, addBtn);
     }
   }
 
@@ -669,6 +1039,56 @@
       return { reponses, caseSensitive };
     }
 
+    if(type === 'texte_a_trous'){
+      const texte = document.getElementById('trou-texte').value.trim();
+      const mode = document.getElementById('trou-mode').value;
+
+      if(texte === ''){
+        alert('Merci de saisir le texte à trous.');
+        return null;
+      }
+      const ids = extractTrouIds(texte);
+      if(ids.length === 0){
+        alert('Le texte doit contenir au moins un trou, ex : {{1}}.');
+        return null;
+      }
+
+      const rows = [...document.querySelectorAll('#trous-container .trou-row')];
+      const trous = [];
+      for(const row of rows){
+        const id = Number(row.dataset.id);
+        const vals = readTrouRowValues(row, mode);
+        if(mode === 'libre'){
+          if(vals.reponses.length === 0){
+            alert(`Merci de renseigner au moins une réponse pour le trou {{${id}}}.`);
+            return null;
+          }
+          trous.push({ id, reponses: vals.reponses, caseSensitive: vals.caseSensitive });
+        } else {
+          if(vals.options.length < 2){
+            alert(`Merci de renseigner au moins 2 options pour le trou {{${id}}}.`);
+            return null;
+          }
+          if(!vals.options.includes(vals.reponse)){
+            alert(`La réponse correcte du trou {{${id}}} doit correspondre exactement à l'une des options.`);
+            return null;
+          }
+          trous.push({ id, options: vals.options, reponse: vals.reponse });
+        }
+      }
+      return { mode, texte, trous };
+    }
+
+    if(type === 'ordre'){
+      const rows = [...document.querySelectorAll('#order-container .order-row')];
+      const elements = rows.map(r => r.querySelector('.order-text').value.trim()).filter(v => v !== '');
+      if(elements.length < 2){
+        alert('Merci de saisir au moins 2 éléments à ordonner.');
+        return null;
+      }
+      return { elements };
+    }
+
     return null;
   }
 
@@ -689,6 +1109,8 @@
     if(!data) return;
 
     const question = { question: qText, type, data };
+    const explication = qExplanationInput.value.trim();
+    if(explication) question.explication = explication;
 
     if(editingIndex !== null){
       questions[editingIndex] = question;
@@ -703,6 +1125,8 @@
   function resetForm(){
     editingIndex = null;
     form.reset();
+    autoResizeTextarea(qTextInput);
+    autoResizeTextarea(qExplanationInput);
     renderQFields(qTypeSelect.value, {});
     formTitle.textContent = 'Ajouter une question';
     submitBtn.textContent = 'Ajouter la question';
@@ -736,6 +1160,19 @@
       } else if(q.type === 'texte_libre'){
         detailsHtml = `<p class="q-meta">Réponses acceptées : ${q.data.reponses.map(escapeHtml).join(', ')}`
           + (q.data.caseSensitive ? ' (sensible à la casse)' : '') + '</p>';
+      } else if(q.type === 'texte_a_trous'){
+        detailsHtml = `<p class="q-meta">${escapeHtml(q.data.texte)}</p><ul>` + q.data.trous.map(t => {
+          if(q.data.mode === 'libre'){
+            return `<li>{{${t.id}}} → ${t.reponses.map(escapeHtml).join(' / ')}${t.caseSensitive ? ' (casse)' : ''}</li>`;
+          }
+          return `<li>{{${t.id}}} → ${escapeHtml(t.reponse)} (options : ${t.options.map(escapeHtml).join(', ')})</li>`;
+        }).join('') + '</ul>';
+      } else if(q.type === 'ordre'){
+        detailsHtml = '<ul>' + q.data.elements.map((el, idx) => `<li>${idx + 1}. ${escapeHtml(el)}</li>`).join('') + '</ul>';
+      }
+
+      if(q.explication){
+        detailsHtml += `<p class="q-meta">💬 ${escapeHtml(q.explication)}</p>`;
       }
 
       card.innerHTML = `
@@ -771,8 +1208,11 @@
       editingIndex = index;
       const q = questions[index];
       qTextInput.value = q.question;
+      autoResizeTextarea(qTextInput);
       qTypeSelect.value = q.type;
       renderQFields(q.type, q.data);
+      qExplanationInput.value = q.explication || '';
+      autoResizeTextarea(qExplanationInput);
       formTitle.textContent = 'Modifier la question';
       submitBtn.textContent = 'Mettre à jour';
       cancelEditBtn.hidden = false;
@@ -806,11 +1246,14 @@
   });
 
   exportBtn.addEventListener('click', () => {
+    let filename = exportFilenameInput.value.trim() || 'questions.json';
+    if(!filename.toLowerCase().endsWith('.json')) filename += '.json';
+
     const blob = new Blob([JSON.stringify({ questions }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'questions.json';
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   });
@@ -819,12 +1262,57 @@
      MODE LANCER — PREPARATION DU QUIZ
   --------------------------------------------------------------- */
   function buildRuntimeQuestion(q, runtimeId){
+    let rq;
+
     if(q.type === 'texte_libre'){
-      return { runtimeId, question: q.question, type: q.type, data: q.data };
+      rq = { runtimeId, question: q.question, type: q.type, data: q.data };
+    } else if(q.type === 'texte_a_trous'){
+      let trous = q.data.trous;
+      if(q.data.mode === 'menu_deroulant'){
+        trous = trous.map(t => ({ ...t, options: shuffle(t.options) }));
+      }
+      rq = { runtimeId, question: q.question, type: q.type, data: { mode: q.data.mode, texte: q.data.texte, trous } };
+    } else if(q.type === 'ordre'){
+      const correctOrder = q.data.elements;
+      let currentOrder = shuffle(correctOrder);
+      let attempts = 0;
+      while(correctOrder.length > 1 && JSON.stringify(currentOrder) === JSON.stringify(correctOrder) && attempts < 5){
+        currentOrder = shuffle(correctOrder);
+        attempts++;
+      }
+      rq = { runtimeId, question: q.question, type: q.type, correctOrder, currentOrder };
+    } else {
+      const correctSet = q.type === 'qcm_simple' ? new Set([q.data.reponse]) : new Set(q.data.reponses);
+      const choices = shuffle(q.data.choix.map((text, i) => ({ text, correct: correctSet.has(i) })));
+      rq = { runtimeId, question: q.question, type: q.type, choices };
     }
-    const correctSet = q.type === 'qcm_simple' ? new Set([q.data.reponse]) : new Set(q.data.reponses);
-    const choices = shuffle(q.data.choix.map((text, i) => ({ text, correct: correctSet.has(i) })));
-    return { runtimeId, question: q.question, type: q.type, choices };
+
+    rq.explication = q.explication || '';
+    return rq;
+  }
+
+  function renderTrouText(rq){
+    const regex = /\{\{(\d+)\}\}/g;
+    const texte = rq.data.texte;
+    let lastIndex = 0;
+    let html = '';
+    let m;
+    while((m = regex.exec(texte)) !== null){
+      html += escapeHtml(texte.slice(lastIndex, m.index));
+      const id = m[1];
+      const trou = rq.data.trous.find(t => String(t.id) === id);
+      if(rq.data.mode === 'libre'){
+        html += `<input type="text" class="trou-input" data-trou-id="${id}">`;
+      } else {
+        const optionsHtml = ['<option value="">—</option>']
+          .concat(trou.options.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`))
+          .join('');
+        html += `<select class="trou-input" data-trou-id="${id}">${optionsHtml}</select>`;
+      }
+      lastIndex = regex.lastIndex;
+    }
+    html += escapeHtml(texte.slice(lastIndex));
+    return html;
   }
 
   function startQuiz(){
@@ -856,6 +1344,18 @@
             ${escapeHtml(c.text)}
           </label>
         `).join('');
+      } else if(rq.type === 'texte_a_trous'){
+        inputsHtml = `<p class="trou-render">${renderTrouText(rq)}</p>`;
+      } else if(rq.type === 'ordre'){
+        inputsHtml = `<ul class="order-list">` + rq.currentOrder.map(el => `
+          <li class="order-item">
+            <span class="order-item-text">${escapeHtml(el)}</span>
+            <span class="order-controls">
+              <button type="button" class="order-up" title="Monter">▲</button>
+              <button type="button" class="order-down" title="Descendre">▼</button>
+            </span>
+          </li>
+        `).join('') + '</ul>';
       } else {
         inputsHtml = `<input type="text" name="q${rq.runtimeId}" placeholder="Votre réponse">`;
       }
@@ -876,6 +1376,21 @@
   }
 
   startQuizBtn.addEventListener('click', startQuiz);
+
+  // Réordonnancement (boutons haut/bas) dans la liste à ordonner du quiz
+  quizQuestions.addEventListener('click', (e) => {
+    const upBtn = e.target.closest('.order-up');
+    const downBtn = e.target.closest('.order-down');
+    if(!upBtn && !downBtn) return;
+    const li = e.target.closest('.order-item');
+    if(upBtn){
+      const prev = li.previousElementSibling;
+      if(prev) li.parentNode.insertBefore(li, prev);
+    } else {
+      const next = li.nextElementSibling;
+      if(next) li.parentNode.insertBefore(next, li);
+    }
+  });
 
   /* ---------------------------------------------------------------
      MODE LANCER — VALIDATION
@@ -905,12 +1420,38 @@
         correctText = rq.choices.filter(c => c.correct).map(c => c.text).join(', ');
         block.querySelectorAll('input').forEach(i => i.disabled = true);
 
-      } else {
+      } else if(rq.type === 'qcm_multiple'){
         const checked = [...block.querySelectorAll('input[type="checkbox"]:checked')].map(i => Number(i.value));
         const correctIdx = rq.choices.map((c, i) => c.correct ? i : null).filter(i => i !== null);
         isCorrect = checked.length === correctIdx.length && checked.every(i => correctIdx.includes(i));
         correctText = rq.choices.filter(c => c.correct).map(c => c.text).join(', ');
         block.querySelectorAll('input').forEach(i => i.disabled = true);
+
+      } else if(rq.type === 'texte_a_trous'){
+        let allCorrect = true;
+        const expectedParts = [];
+        rq.data.trous.forEach(t => {
+          const el = block.querySelector(`.trou-input[data-trou-id="${t.id}"]`);
+          const val = el.value.trim();
+          let ok;
+          if(rq.data.mode === 'libre'){
+            ok = t.reponses.some(r => t.caseSensitive ? r === val : r.toLowerCase() === val.toLowerCase());
+            expectedParts.push(`{{${t.id}}} : ${t.reponses.join(' / ')}`);
+          } else {
+            ok = val === t.reponse;
+            expectedParts.push(`{{${t.id}}} : ${t.reponse}`);
+          }
+          if(!ok) allCorrect = false;
+          el.disabled = true;
+        });
+        isCorrect = allCorrect;
+        correctText = expectedParts.join(' ; ');
+
+      } else if(rq.type === 'ordre'){
+        const items = [...block.querySelectorAll('.order-item-text')].map(s => s.textContent);
+        isCorrect = JSON.stringify(items) === JSON.stringify(rq.correctOrder);
+        correctText = rq.correctOrder.join(' → ');
+        block.querySelectorAll('.order-controls button').forEach(b => b.disabled = true);
       }
 
       if(isCorrect) score++;
@@ -920,6 +1461,13 @@
       feedback.className = 'feedback';
       feedback.textContent = isCorrect ? '✓ Correct' : `✕ Incorrect — réponse attendue : ${correctText}`;
       block.appendChild(feedback);
+
+      if(rq.explication){
+        const expl = document.createElement('p');
+        expl.className = 'explanation';
+        expl.textContent = `💬 ${rq.explication}`;
+        block.appendChild(expl);
+      }
     });
 
     const total = runtimeQuestions.length;
@@ -951,6 +1499,8 @@
      INITIALISATION
   --------------------------------------------------------------- */
   renderQuestionsList();
+  autoResizeTextarea(qTextInput);
+  autoResizeTextarea(qExplanationInput);
 
 })();
 </script>
