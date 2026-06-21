@@ -19,6 +19,25 @@
     --incorrect-bg: #fef2f2;
   }
 
+  [data-theme="dark"]{
+    --bg: #15171c;
+    --card-bg: #1e2128;
+    --text: #e8e7e3;
+    --muted: #9499a3;
+    --border: #34373f;
+    --accent: #6366f1;
+    --accent-light: #262a40;
+    --correct: #4ade80;
+    --correct-bg: #16261d;
+    --incorrect: #f87171;
+    --incorrect-bg: #2b1a1a;
+  }
+
+  body, .btn, label.file-label, .filename-input, input, select, textarea, .q-card,
+  .quiz-question, .order-item, .order-move, .order-controls button, .theme-toggle{
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+
   *{ box-sizing: border-box; }
 
   body{
@@ -39,6 +58,27 @@
     font-size: 1.5rem;
     margin: 0 0 4px;
   }
+
+  .page-header{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .theme-toggle{
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 38px;
+    height: 38px;
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--text);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .theme-toggle:hover{ border-color: var(--accent); }
 
   h2{
     font-size: 1.05rem;
@@ -99,8 +139,14 @@
 
   .btn:hover{ opacity: .92; }
 
+  .btn.secondary:hover, .btn.ghost:hover{
+    border-color: var(--accent);
+    color: var(--accent);
+    opacity: 1;
+  }
+
   .btn.secondary{
-    background: #fff;
+    background: var(--card-bg);
     color: var(--text);
     border: 1px solid var(--border);
   }
@@ -133,7 +179,7 @@
   label.file-label{
     display:inline-flex;
     align-items:center;
-    background: #fff;
+    background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 9px 16px;
@@ -149,7 +195,7 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     font-size: .9rem;
-    background: #fff;
+    background: var(--card-bg);
     color: var(--text);
   }
 
@@ -176,7 +222,7 @@
     border-radius: 7px;
     font-size: .92rem;
     color: var(--text);
-    background: #fff;
+    background: var(--card-bg);
     font-family: inherit;
   }
 
@@ -370,7 +416,7 @@
   }
 
   .order-move{
-    background: #fff;
+    background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 6px;
     width: 28px;
@@ -526,7 +572,7 @@
     padding: 9px 12px;
     border: 1px solid var(--border);
     border-radius: 8px;
-    background: #fff;
+    background: var(--card-bg);
     margin-bottom: 8px;
     font-size: .92rem;
   }
@@ -538,7 +584,7 @@
   }
 
   .order-controls button{
-    background: #fff;
+    background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 6px;
     width: 26px;
@@ -562,8 +608,13 @@
 <body>
 
 <div class="wrap">
-  <h1>Mini Quiz</h1>
-  <p class="subtitle">Éditez vos questions puis lancez le quiz.</p>
+  <div class="page-header">
+    <div>
+      <h1>Mini Quiz</h1>
+      <p class="subtitle">Éditez vos questions puis lancez le quiz.</p>
+    </div>
+    <button type="button" id="theme-toggle" class="theme-toggle" title="Changer de thème" aria-label="Changer de thème">🌙</button>
+  </div>
 
   <nav class="tabs">
     <button type="button" id="btn-nav-edit" class="active">Éditer</button>
@@ -655,6 +706,7 @@
   const navPlayBtn = document.getElementById('btn-nav-play');
   const viewEdit = document.getElementById('view-edit');
   const viewPlay = document.getElementById('view-play');
+  const themeToggleBtn = document.getElementById('theme-toggle');
 
   const fileInput = document.getElementById('file-input');
   const exportBtn = document.getElementById('export-btn');
@@ -692,6 +744,38 @@
   }
   navEditBtn.addEventListener('click', () => showView('edit'));
   navPlayBtn.addEventListener('click', () => showView('play'));
+
+  /* ---------------------------------------------------------------
+     THEME CLAIR / SOMBRE
+  --------------------------------------------------------------- */
+  function applyTheme(theme){
+    if(theme === 'dark'){
+      document.documentElement.setAttribute('data-theme', 'dark');
+      themeToggleBtn.textContent = '☀️';
+      themeToggleBtn.title = 'Passer au thème clair';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      themeToggleBtn.textContent = '🌙';
+      themeToggleBtn.title = 'Passer au thème sombre';
+    }
+  }
+
+  function getInitialTheme(){
+    try{
+      const saved = localStorage.getItem('mini-quiz-theme');
+      if(saved === 'dark' || saved === 'light') return saved;
+    } catch(e){ /* localStorage indisponible, on ignore */ }
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+
+  let currentTheme = getInitialTheme();
+  applyTheme(currentTheme);
+
+  themeToggleBtn.addEventListener('click', () => {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(currentTheme);
+    try{ localStorage.setItem('mini-quiz-theme', currentTheme); } catch(e){ /* tant pis, pas mémorisé */ }
+  });
 
   /* ---------------------------------------------------------------
      UTILITAIRES
