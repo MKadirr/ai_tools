@@ -213,7 +213,7 @@
     margin-bottom: 14px;
   }
 
-  input[type="text"], select, textarea{
+  input[type="text"], input[type="number"], select, textarea{
     display:block;
     width: 100%;
     margin-top: 6px;
@@ -233,14 +233,14 @@
     overflow: hidden;
   }
 
-  .choice-row, .answer-row{
+  .choice-row, .answer-row, .pool-option-row{
     display:flex;
     align-items:center;
     gap: 8px;
     margin-bottom: 8px;
   }
 
-  .choice-row input[type="text"], .answer-row input[type="text"]{
+  .choice-row input[type="text"], .answer-row input[type="text"], .pool-option-row input[type="text"]{
     margin-top:0;
     flex: 1;
   }
@@ -271,6 +271,11 @@
     font-size: .85rem;
     cursor: pointer;
     margin-top: 2px;
+  }
+
+  .add-row-btn.small{
+    padding: 5px 9px;
+    font-size: .78rem;
   }
 
   .case-sensitive-row{
@@ -368,26 +373,41 @@
     margin: 4px 0 10px;
   }
 
-  .trou-row{
+  .pool-toggle-label{
     display:flex;
     align-items:center;
     gap: 8px;
+    font-size: .85rem;
+    color: var(--text);
+    margin: 2px 0 10px;
+  }
+  .pool-toggle-label input{ width:16px; height:16px; flex-shrink:0; }
+
+  #pool-container{
     margin-bottom: 8px;
-    flex-wrap: wrap;
+  }
+
+  #pool-add-btn{
+    margin-bottom: 16px;
+  }
+
+  .trou-row{
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
   }
 
   .trou-row .trou-label{
-    font-size: .82rem;
+    display:block;
+    font-size: .8rem;
     font-weight: 600;
-    color: var(--text);
-    flex-shrink: 0;
-    min-width: 64px;
+    color: var(--muted);
+    margin-bottom: 8px;
   }
 
-  .trou-row input[type="text"]{
+  .trou-row-body select{
     margin-top: 0;
-    flex: 1;
-    min-width: 140px;
   }
 
   .trou-cs-label{
@@ -396,8 +416,7 @@
     gap: 6px;
     font-size: .8rem;
     color: var(--text);
-    flex-shrink: 0;
-    white-space: nowrap;
+    margin-top: 4px;
   }
   .trou-cs-label input{ width:16px; height:16px; }
 
@@ -529,6 +548,27 @@
   .is-correct p.feedback{ color: var(--correct); }
   .is-incorrect p.feedback{ color: var(--incorrect); }
 
+  /* inputs désactivés après validation — forcer les couleurs pour le dark mode */
+  .quiz-question input:disabled,
+  .quiz-question select:disabled,
+  .quiz-question textarea:disabled{
+    opacity: 1;
+    color: var(--text);
+    background: var(--card-bg);
+    border-color: var(--border);
+    -webkit-text-fill-color: var(--text);
+  }
+
+  .quiz-question.is-correct input:disabled,
+  .quiz-question.is-correct select:disabled{
+    background: var(--correct-bg);
+  }
+
+  .quiz-question.is-incorrect input:disabled,
+  .quiz-question.is-incorrect select:disabled{
+    background: var(--incorrect-bg);
+  }
+
   p.explanation{
     margin: 6px 0 0;
     font-size: .85rem;
@@ -603,6 +643,39 @@
   }
 
   [hidden]{ display: none !important; }
+
+  /* --- Onglet JSON --- */
+
+  .json-toolbar{
+    display:flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  #json-editor{
+    width: 100%;
+    min-height: 460px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: .82rem;
+    line-height: 1.6;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--text);
+    resize: vertical;
+    tab-size: 2;
+  }
+
+  .json-error{
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--incorrect-bg);
+    color: var(--incorrect);
+    font-size: .85rem;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
 </style>
 </head>
 <body>
@@ -619,6 +692,7 @@
   <nav class="tabs">
     <button type="button" id="btn-nav-edit" class="active">Éditer</button>
     <button type="button" id="btn-nav-play">Lancer</button>
+    <button type="button" id="btn-nav-json">JSON</button>
   </nav>
 
   <!-- ===================== VUE EDITION ===================== -->
@@ -685,6 +759,17 @@
 
   </section>
 
+  <!-- ===================== VUE JSON ===================== -->
+  <section id="view-json" hidden>
+    <p class="subtitle" style="margin-bottom:12px;">Éditez le JSON directement. Cliquez sur "Appliquer" pour charger les modifications.</p>
+    <div class="json-toolbar">
+      <button type="button" class="btn secondary" id="json-refresh-btn">↺ Rafraîchir</button>
+      <button type="button" class="btn" id="json-apply-btn">Appliquer</button>
+    </div>
+    <textarea id="json-editor" spellcheck="false"></textarea>
+    <p id="json-error" class="json-error" hidden></p>
+  </section>
+
 </div>
 
 <script>
@@ -697,6 +782,7 @@
   let editingIndex = null; // index en cours d'édition, ou null
   let runtimeQuestions = []; // copie mélangée utilisée pendant le quiz
   let lastTrouMode = null; // mode ('libre'/'menu_deroulant') du dernier rendu des trous, pour préserver les valeurs
+  let lastTrouPoolPartage = false; // pool partagé ou non lors du dernier rendu des trous
   let quizStartTime = null; // horodatage de lancement du quiz, pour le chronomètre
 
   /* ---------------------------------------------------------------
@@ -704,9 +790,16 @@
   --------------------------------------------------------------- */
   const navEditBtn = document.getElementById('btn-nav-edit');
   const navPlayBtn = document.getElementById('btn-nav-play');
+  const navJsonBtn = document.getElementById('btn-nav-json');
   const viewEdit = document.getElementById('view-edit');
   const viewPlay = document.getElementById('view-play');
+  const viewJson = document.getElementById('view-json');
   const themeToggleBtn = document.getElementById('theme-toggle');
+
+  const jsonEditor = document.getElementById('json-editor');
+  const jsonRefreshBtn = document.getElementById('json-refresh-btn');
+  const jsonApplyBtn = document.getElementById('json-apply-btn');
+  const jsonError = document.getElementById('json-error');
 
   const fileInput = document.getElementById('file-input');
   const exportBtn = document.getElementById('export-btn');
@@ -736,14 +829,24 @@
      NAVIGATION ENTRE LES VUES
   --------------------------------------------------------------- */
   function showView(name){
-    const isEdit = name === 'edit';
-    viewEdit.hidden = !isEdit;
-    viewPlay.hidden = isEdit;
-    navEditBtn.classList.toggle('active', isEdit);
-    navPlayBtn.classList.toggle('active', !isEdit);
+    viewEdit.hidden = name !== 'edit';
+    viewPlay.hidden = name !== 'play';
+    viewJson.hidden  = name !== 'json';
+    navEditBtn.classList.toggle('active', name === 'edit');
+    navPlayBtn.classList.toggle('active', name === 'play');
+    navJsonBtn.classList.toggle('active', name === 'json');
+    if(name === 'json') refreshJsonEditor();
   }
   navEditBtn.addEventListener('click', () => showView('edit'));
-  navPlayBtn.addEventListener('click', () => showView('play'));
+  navPlayBtn.addEventListener('click', () => {
+    showView('play');
+    if(!quizForm.hidden && validateBtn.hidden){
+      quizForm.hidden = true;
+      quizResult.hidden = true;
+      playIntro.hidden = false;
+    }
+  });
+  navJsonBtn.addEventListener('click', () => showView('json'));
 
   /* ---------------------------------------------------------------
      THEME CLAIR / SOMBRE
@@ -822,13 +925,13 @@
   /* ---------------------------------------------------------------
      FORMULAIRE — CHAMPS DYNAMIQUES SELON LE TYPE
   --------------------------------------------------------------- */
-  function buildChoiceRow(text, correct, multiple){
+  function buildChoiceRow(text, correct, multiple, groupName){
     const row = document.createElement('div');
     row.className = 'choice-row';
 
     const correctInput = document.createElement('input');
     correctInput.type = multiple ? 'checkbox' : 'radio';
-    correctInput.name = 'choice-correct';
+    correctInput.name = groupName || 'choice-correct';
     correctInput.className = 'choice-correct';
     correctInput.checked = !!correct;
     correctInput.title = 'Marquer comme bonne réponse';
@@ -869,6 +972,45 @@
     return row;
   }
 
+  function buildPoolOptionRow(text){
+    const row = document.createElement('div');
+    row.className = 'pool-option-row';
+
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.className = 'pool-option-text';
+    textInput.placeholder = 'Option du pool';
+    textInput.value = text || '';
+    textInput.addEventListener('input', refreshPoolSelects);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-row';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', () => { row.remove(); refreshPoolSelects(); });
+
+    row.append(textInput, removeBtn);
+    return row;
+  }
+
+  function getCurrentPoolOptions(){
+    const container = document.getElementById('pool-container');
+    if(!container) return [];
+    return [...container.querySelectorAll('.pool-option-text')]
+      .map(i => i.value.trim())
+      .filter(v => v !== '');
+  }
+
+  function refreshPoolSelects(){
+    const pool = getCurrentPoolOptions();
+    document.querySelectorAll('.trou-pool-select').forEach(sel => {
+      const desired = sel.dataset.preselect !== undefined ? sel.dataset.preselect : sel.value;
+      sel.innerHTML = '<option value="">—</option>' + pool.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+      if(pool.includes(desired)) sel.value = desired;
+      delete sel.dataset.preselect;
+    });
+  }
+
   function extractTrouIds(texte){
     const ids = new Set();
     const regex = /\{\{(\d+)\}\}/g;
@@ -877,7 +1019,7 @@
     return [...ids].sort((a, b) => a - b);
   }
 
-  function buildTrouRow(id, mode, values){
+  function buildTrouRow(id, mode, poolPartage, values){
     values = values || {};
     const row = document.createElement('div');
     row.className = 'trou-row';
@@ -888,12 +1030,20 @@
     label.textContent = `{{${id}}}`;
     row.appendChild(label);
 
+    const body = document.createElement('div');
+    body.className = 'trou-row-body';
+
     if(mode === 'libre'){
-      const reponsesInput = document.createElement('input');
-      reponsesInput.type = 'text';
-      reponsesInput.className = 'trou-reponses';
-      reponsesInput.placeholder = 'Réponses acceptées, séparées par une virgule';
-      reponsesInput.value = (values.reponses || []).join(', ');
+      const answersContainer = document.createElement('div');
+      answersContainer.className = 'trou-answers-container';
+      const reponses = values.reponses && values.reponses.length ? values.reponses : [''];
+      reponses.forEach(r => answersContainer.appendChild(buildAnswerRow(r)));
+
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'add-row-btn small';
+      addBtn.textContent = '+ Réponse acceptée';
+      addBtn.addEventListener('click', () => answersContainer.appendChild(buildAnswerRow('')));
 
       const csLabel = document.createElement('label');
       csLabel.className = 'trou-cs-label';
@@ -903,48 +1053,65 @@
       csInput.checked = !!values.caseSensitive;
       csLabel.append(csInput, document.createTextNode('Sensible à la casse'));
 
-      row.append(reponsesInput, csLabel);
+      body.append(answersContainer, addBtn, csLabel);
+
+    } else if(poolPartage){
+      const select = document.createElement('select');
+      select.className = 'trou-pool-select';
+      if(values.reponse) select.dataset.preselect = values.reponse;
+      body.appendChild(select);
+
     } else {
-      const optionsInput = document.createElement('input');
-      optionsInput.type = 'text';
-      optionsInput.className = 'trou-options';
-      optionsInput.placeholder = 'Options séparées par une virgule';
-      optionsInput.value = (values.options || []).join(', ');
+      const optionsContainer = document.createElement('div');
+      optionsContainer.className = 'trou-options-container';
+      const groupName = `trou-correct-${id}`;
+      const opts = values.options && values.options.length ? values.options : ['', ''];
+      opts.forEach(opt => optionsContainer.appendChild(buildChoiceRow(opt, opt !== '' && opt === values.reponse, false, groupName)));
 
-      const reponseInput = document.createElement('input');
-      reponseInput.type = 'text';
-      reponseInput.className = 'trou-reponse';
-      reponseInput.placeholder = 'Réponse correcte (une des options)';
-      reponseInput.value = values.reponse || '';
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'add-row-btn small';
+      addBtn.textContent = '+ Option';
+      addBtn.addEventListener('click', () => optionsContainer.appendChild(buildChoiceRow('', false, false, groupName)));
 
-      row.append(optionsInput, reponseInput);
+      body.append(optionsContainer, addBtn);
     }
 
+    row.appendChild(body);
     return row;
   }
 
-  function readTrouRowValues(row, mode){
+  function readTrouRowValues(row, mode, poolPartage){
     if(mode === 'libre'){
-      const reponses = row.querySelector('.trou-reponses').value.split(',').map(s => s.trim()).filter(s => s !== '');
+      const reponses = [...row.querySelectorAll('.trou-answers-container .answer-text')]
+        .map(i => i.value.trim()).filter(v => v !== '');
       const caseSensitive = row.querySelector('.trou-cs').checked;
       return { reponses, caseSensitive };
     }
-    const options = row.querySelector('.trou-options').value.split(',').map(s => s.trim()).filter(s => s !== '');
-    const reponse = row.querySelector('.trou-reponse').value.trim();
+    if(poolPartage){
+      const select = row.querySelector('.trou-pool-select');
+      return { reponse: select ? select.value : '' };
+    }
+    const optRows = [...row.querySelectorAll('.trou-options-container .choice-row')];
+    const options = optRows.map(r => r.querySelector('.choice-text').value.trim()).filter(v => v !== '');
+    const correctRow = optRows.find(r => r.querySelector('.choice-correct').checked);
+    const reponse = correctRow ? correctRow.querySelector('.choice-text').value.trim() : '';
     return { options, reponse };
   }
 
   function syncTrousContainer(preserve){
     const texteInput = document.getElementById('trou-texte');
     const modeSelect = document.getElementById('trou-mode');
+    const poolCheckbox = document.getElementById('trou-pool-partage');
     const container = document.getElementById('trous-container');
     if(!texteInput || !modeSelect || !container) return;
     const mode = modeSelect.value;
+    const poolPartage = mode === 'menu_deroulant' && !!(poolCheckbox && poolCheckbox.checked);
 
     let existingMap = {};
-    if(preserve && lastTrouMode === mode){
+    if(preserve && lastTrouMode === mode && lastTrouPoolPartage === poolPartage){
       container.querySelectorAll('.trou-row').forEach(row => {
-        existingMap[row.dataset.id] = readTrouRowValues(row, mode);
+        existingMap[row.dataset.id] = readTrouRowValues(row, mode, poolPartage);
       });
     }
 
@@ -956,9 +1123,11 @@
       hint.textContent = 'Ajoutez {{1}}, {{2}}, ... dans le texte ci-dessus pour créer des trous.';
       container.appendChild(hint);
     } else {
-      ids.forEach(id => container.appendChild(buildTrouRow(id, mode, existingMap[id])));
+      ids.forEach(id => container.appendChild(buildTrouRow(id, mode, poolPartage, existingMap[id])));
     }
     lastTrouMode = mode;
+    lastTrouPoolPartage = poolPartage;
+    refreshPoolSelects();
   }
 
   function buildOrderRow(text){
@@ -1061,6 +1230,31 @@
       modeSelect.value = data.mode || 'libre';
       modeLabel.appendChild(modeSelect);
 
+      const poolLabel = document.createElement('label');
+      poolLabel.className = 'pool-toggle-label';
+      poolLabel.hidden = modeSelect.value !== 'menu_deroulant';
+      const poolCheckbox = document.createElement('input');
+      poolCheckbox.type = 'checkbox';
+      poolCheckbox.id = 'trou-pool-partage';
+      poolCheckbox.checked = !!data.poolPartage;
+      poolLabel.append(poolCheckbox, document.createTextNode('Tous les trous partagent la même liste d\'options'));
+
+      const poolContainer = document.createElement('div');
+      poolContainer.id = 'pool-container';
+      const poolOptions = data.options && data.options.length ? data.options : ['', ''];
+      poolOptions.forEach(o => poolContainer.appendChild(buildPoolOptionRow(o)));
+
+      const poolAddBtn = document.createElement('button');
+      poolAddBtn.type = 'button';
+      poolAddBtn.id = 'pool-add-btn';
+      poolAddBtn.className = 'add-row-btn';
+      poolAddBtn.textContent = '+ Ajouter une option au pool';
+      poolAddBtn.addEventListener('click', () => { poolContainer.appendChild(buildPoolOptionRow('')); refreshPoolSelects(); });
+
+      const poolShown = modeSelect.value === 'menu_deroulant' && poolCheckbox.checked;
+      poolContainer.hidden = !poolShown;
+      poolAddBtn.hidden = !poolShown;
+
       const texteLabel = document.createElement('label');
       texteLabel.textContent = 'Texte (utilisez {{1}}, {{2}}, ... pour les trous)';
       const texteArea = document.createElement('textarea');
@@ -1073,10 +1267,11 @@
       const trousContainer = document.createElement('div');
       trousContainer.id = 'trous-container';
 
-      qFields.append(modeLabel, texteLabel, trousContainer);
+      qFields.append(modeLabel, poolLabel, poolContainer, poolAddBtn, texteLabel, trousContainer);
 
       // amorce initiale à partir des données existantes (cas édition)
       const initialIds = extractTrouIds(texteArea.value);
+      const poolPartage = modeSelect.value === 'menu_deroulant' && poolCheckbox.checked;
       if(initialIds.length === 0){
         const hint = document.createElement('p');
         hint.className = 'trou-hint';
@@ -1085,13 +1280,27 @@
       } else {
         initialIds.forEach(id => {
           const existing = (data.trous || []).find(t => Number(t.id) === id);
-          trousContainer.appendChild(buildTrouRow(id, modeSelect.value, existing));
+          trousContainer.appendChild(buildTrouRow(id, modeSelect.value, poolPartage, existing));
         });
       }
       lastTrouMode = modeSelect.value;
+      lastTrouPoolPartage = poolPartage;
+      refreshPoolSelects();
 
       texteArea.addEventListener('input', () => syncTrousContainer(true));
-      modeSelect.addEventListener('change', () => syncTrousContainer(false));
+      modeSelect.addEventListener('change', () => {
+        poolLabel.hidden = modeSelect.value !== 'menu_deroulant';
+        const shown = modeSelect.value === 'menu_deroulant' && poolCheckbox.checked;
+        poolContainer.hidden = !shown;
+        poolAddBtn.hidden = !shown;
+        syncTrousContainer(false);
+      });
+      poolCheckbox.addEventListener('change', () => {
+        const shown = modeSelect.value === 'menu_deroulant' && poolCheckbox.checked;
+        poolContainer.hidden = !shown;
+        poolAddBtn.hidden = !shown;
+        syncTrousContainer(false);
+      });
 
     } else if(type === 'ordre'){
       const hint = document.createElement('p');
@@ -1164,6 +1373,8 @@
     if(type === 'texte_a_trous'){
       const texte = document.getElementById('trou-texte').value.trim();
       const mode = document.getElementById('trou-mode').value;
+      const poolCheckbox = document.getElementById('trou-pool-partage');
+      const poolPartage = mode === 'menu_deroulant' && !!(poolCheckbox && poolCheckbox.checked);
 
       if(texte === ''){
         alert('Merci de saisir le texte à trous.');
@@ -1175,30 +1386,51 @@
         return null;
       }
 
+      let sharedOptions = null;
+      if(poolPartage){
+        sharedOptions = getCurrentPoolOptions();
+        if(sharedOptions.length < 2){
+          alert('Merci de renseigner au moins 2 options dans le pool partagé.');
+          return null;
+        }
+      }
+
       const rows = [...document.querySelectorAll('#trous-container .trou-row')];
       const trous = [];
       for(const row of rows){
         const id = Number(row.dataset.id);
-        const vals = readTrouRowValues(row, mode);
+        const vals = readTrouRowValues(row, mode, poolPartage);
         if(mode === 'libre'){
           if(vals.reponses.length === 0){
             alert(`Merci de renseigner au moins une réponse pour le trou {{${id}}}.`);
             return null;
           }
           trous.push({ id, reponses: vals.reponses, caseSensitive: vals.caseSensitive });
+        } else if(poolPartage){
+          if(!vals.reponse){
+            alert(`Merci de choisir la bonne réponse pour le trou {{${id}}}.`);
+            return null;
+          }
+          trous.push({ id, reponse: vals.reponse });
         } else {
           if(vals.options.length < 2){
             alert(`Merci de renseigner au moins 2 options pour le trou {{${id}}}.`);
             return null;
           }
-          if(!vals.options.includes(vals.reponse)){
-            alert(`La réponse correcte du trou {{${id}}} doit correspondre exactement à l'une des options.`);
+          if(!vals.reponse){
+            alert(`Merci de sélectionner la bonne réponse pour le trou {{${id}}}.`);
             return null;
           }
           trous.push({ id, options: vals.options, reponse: vals.reponse });
         }
       }
-      return { mode, texte, trous };
+
+      const result = { mode, texte, trous };
+      if(poolPartage){
+        result.poolPartage = true;
+        result.options = sharedOptions;
+      }
+      return result;
     }
 
     if(type === 'ordre'){
@@ -1286,12 +1518,19 @@
         detailsHtml = `<p class="q-meta">Réponses acceptées : ${q.data.reponses.map(escapeHtml).join(', ')}`
           + (q.data.caseSensitive ? ' (sensible à la casse)' : '') + '</p>';
       } else if(q.type === 'texte_a_trous'){
-        detailsHtml = `<p class="q-meta">${escapeHtml(q.data.texte)}</p><ul>` + q.data.trous.map(t => {
+        const poolHtml = q.data.poolPartage
+          ? `<p class="q-meta">Pool partagé : ${q.data.options.map(escapeHtml).join(', ')}</p>`
+          : '';
+        const trousHtml = q.data.trous.map(t => {
           if(q.data.mode === 'libre'){
             return `<li>{{${t.id}}} → ${t.reponses.map(escapeHtml).join(' / ')}${t.caseSensitive ? ' (casse)' : ''}</li>`;
           }
+          if(q.data.poolPartage){
+            return `<li>{{${t.id}}} → ${escapeHtml(t.reponse)}</li>`;
+          }
           return `<li>{{${t.id}}} → ${escapeHtml(t.reponse)} (options : ${t.options.map(escapeHtml).join(', ')})</li>`;
-        }).join('') + '</ul>';
+        }).join('');
+        detailsHtml = `<p class="q-meta">${escapeHtml(q.data.texte)}</p>${poolHtml}<ul>${trousHtml}</ul>`;
       } else if(q.type === 'ordre'){
         detailsHtml = '<ul>' + q.data.elements.map((el, idx) => `<li>${idx + 1}. ${escapeHtml(el)}</li>`).join('') + '</ul>';
       }
@@ -1393,10 +1632,16 @@
       rq = { runtimeId, question: q.question, type: q.type, data: q.data };
     } else if(q.type === 'texte_a_trous'){
       let trous = q.data.trous;
-      if(q.data.mode === 'menu_deroulant'){
+      let sharedOptions = null;
+      if(q.data.poolPartage){
+        sharedOptions = shuffle(q.data.options);
+      } else if(q.data.mode === 'menu_deroulant'){
         trous = trous.map(t => ({ ...t, options: shuffle(t.options) }));
       }
-      rq = { runtimeId, question: q.question, type: q.type, data: { mode: q.data.mode, texte: q.data.texte, trous } };
+      rq = {
+        runtimeId, question: q.question, type: q.type,
+        data: { mode: q.data.mode, texte: q.data.texte, trous, poolPartage: !!q.data.poolPartage, options: sharedOptions }
+      };
     } else if(q.type === 'ordre'){
       const correctOrder = q.data.elements;
       let currentOrder = shuffle(correctOrder);
@@ -1429,8 +1674,9 @@
       if(rq.data.mode === 'libre'){
         html += `<input type="text" class="trou-input" data-trou-id="${id}">`;
       } else {
+        const optionsList = rq.data.poolPartage ? rq.data.options : trou.options;
         const optionsHtml = ['<option value="">—</option>']
-          .concat(trou.options.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`))
+          .concat(optionsList.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`))
           .join('');
         html += `<select class="trou-input" data-trou-id="${id}">${optionsHtml}</select>`;
       }
@@ -1613,19 +1859,46 @@
     `;
     quizResult.hidden = false;
     validateBtn.hidden = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   /* ---------------------------------------------------------------
-     RELANCER LE QUIZ APRES VALIDATION (clic sur "Lancer" dans la nav
-     ou sur le bouton lui repasse par startQuiz pour un nouveau mélange)
+     EDITEUR JSON
   --------------------------------------------------------------- */
-  navPlayBtn.addEventListener('click', () => {
-    if(!quizForm.hidden && validateBtn.hidden){
-      // un quiz vient d'être validé : on revient à l'écran d'intro
-      quizForm.hidden = true;
-      quizResult.hidden = true;
-      playIntro.hidden = false;
+  function buildExportPayload(){
+    return { questions };
+  }
+
+  function refreshJsonEditor(){
+    jsonEditor.value = JSON.stringify(buildExportPayload(), null, 2);
+    jsonError.hidden = true;
+    autoResizeTextarea(jsonEditor);
+  }
+
+  jsonRefreshBtn.addEventListener('click', refreshJsonEditor);
+
+  jsonApplyBtn.addEventListener('click', () => {
+    jsonError.hidden = true;
+    let parsed;
+    try{
+      parsed = JSON.parse(jsonEditor.value);
+    } catch(e){
+      jsonError.textContent = 'JSON invalide : ' + e.message;
+      jsonError.hidden = false;
+      return;
     }
+    if(!parsed || !Array.isArray(parsed.questions)){
+      jsonError.textContent = 'Format invalide : le JSON doit contenir un champ "questions" (tableau).';
+      jsonError.hidden = false;
+      return;
+    }
+    questions = parsed.questions;
+    resetForm();
+    renderQuestionsList();
+    jsonError.hidden = true;
+    // feedback visuel bref
+    jsonApplyBtn.textContent = '✓ Appliqué';
+    setTimeout(() => { jsonApplyBtn.textContent = 'Appliquer'; }, 1400);
   });
 
   /* ---------------------------------------------------------------
