@@ -305,6 +305,12 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 14px 16px;
+    transition: background-color .3s ease, border-color .3s ease;
+  }
+
+  .q-card.is-highlighted{
+    background: var(--accent-light);
+    border-color: var(--accent);
   }
 
   .q-card-head{
@@ -453,11 +459,18 @@
     padding: 40px 0;
   }
 
+  .play-config-row{
+    display:flex;
+    justify-content:center;
+    gap: 28px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
   .quiz-count-label{
     display:block;
     font-size: .85rem;
     color: var(--muted);
-    margin-bottom: 18px;
   }
 
   .quiz-count-label input{
@@ -470,6 +483,48 @@
     border-radius: 7px;
     font-size: .95rem;
     color: var(--text);
+  }
+
+  .seed-input-row{
+    display:flex;
+    gap: 6px;
+    margin-top: 8px;
+    justify-content: center;
+  }
+
+  .seed-input-row input{
+    width: 110px;
+    text-align: center;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: .95rem;
+    color: var(--text);
+    background: var(--card-bg);
+  }
+
+  #seed-random-btn{
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    width: 38px;
+    font-size: 1.05rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  #seed-random-btn:hover{ border-color: var(--accent); }
+
+  #quiz-active-bar{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
+  #quiz-seed-display{
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   }
 
   .score-banner{
@@ -644,6 +699,86 @@
 
   [hidden]{ display: none !important; }
 
+  /* --- Onglet Score --- */
+
+  .score-columns{
+    display:flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .score-column{
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .bubble-grid{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .score-bubble{
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    display:flex;
+    flex-direction: column;
+    align-items:center;
+    justify-content:center;
+    cursor: pointer;
+    font-size: .68rem;
+    line-height: 1.3;
+    color: var(--text);
+    background: var(--card-bg);
+    flex-shrink: 0;
+  }
+  .score-bubble:hover{ border-color: var(--accent); transform: translateY(-1px); }
+
+  .score-bubble .bubble-num{
+    font-weight: 700;
+    font-size: .74rem;
+  }
+
+  .score-bubble.is-untested{
+    background: var(--card-bg);
+    color: var(--muted);
+  }
+
+  .run-list{
+    display:flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .run-bubble{
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: .85rem;
+    background: var(--card-bg);
+  }
+
+  .run-bubble.is-obsolete{
+    opacity: .5;
+  }
+
+  .run-bubble .run-score{
+    font-weight: 700;
+  }
+
+  .run-bubble .run-meta{
+    font-size: .78rem;
+    color: var(--muted);
+    text-align: right;
+  }
+
   /* --- Onglet JSON --- */
 
   .json-toolbar{
@@ -692,6 +827,7 @@
   <nav class="tabs">
     <button type="button" id="btn-nav-edit" class="active">Éditer</button>
     <button type="button" id="btn-nav-play">Lancer</button>
+    <button type="button" id="btn-nav-score">Score</button>
     <button type="button" id="btn-nav-json">JSON</button>
   </nav>
 
@@ -744,10 +880,23 @@
   <section id="view-play" hidden>
 
     <div id="play-intro">
-      <label class="quiz-count-label">Nombre de questions à tirer
-        <input type="number" id="quiz-count-input" min="1">
-      </label>
+      <div class="play-config-row">
+        <label class="quiz-count-label">Nombre de questions à tirer
+          <input type="number" id="quiz-count-input" min="1">
+        </label>
+        <label class="quiz-count-label">Seed (optionnel)
+          <div class="seed-input-row">
+            <input type="number" id="quiz-seed-input" placeholder="aléatoire">
+            <button type="button" id="seed-random-btn" title="Générer une seed aléatoire" aria-label="Générer une seed aléatoire">🎲</button>
+          </div>
+        </label>
+      </div>
       <button type="button" class="btn" id="start-quiz-btn">Lancer le quiz</button>
+    </div>
+
+    <div id="quiz-active-bar" hidden>
+      <span id="quiz-seed-display"></span>
+      <button type="button" class="btn ghost small" id="regenerate-btn">🔄 Régénérer</button>
     </div>
 
     <div id="quiz-result" hidden></div>
@@ -757,6 +906,22 @@
       <button type="submit" class="btn" id="validate-btn">Valider</button>
     </form>
 
+  </section>
+
+  <!-- ===================== VUE SCORE ===================== -->
+  <section id="view-score" hidden>
+    <div class="score-columns">
+      <div class="score-column">
+        <h2 style="margin-top:0;">Questions</h2>
+        <p class="subtitle" id="score-questions-empty">Aucune question pour l'instant.</p>
+        <div id="score-questions-bubbles" class="bubble-grid"></div>
+      </div>
+      <div class="score-column">
+        <h2 style="margin-top:0;">Historique des quiz</h2>
+        <p class="subtitle" id="score-runs-empty">Aucun quiz validé pour l'instant.</p>
+        <div id="score-runs-list" class="run-list"></div>
+      </div>
+    </div>
   </section>
 
   <!-- ===================== VUE JSON ===================== -->
@@ -784,15 +949,20 @@
   let lastTrouMode = null; // mode ('libre'/'menu_deroulant') du dernier rendu des trous, pour préserver les valeurs
   let lastTrouPoolPartage = false; // pool partagé ou non lors du dernier rendu des trous
   let quizStartTime = null; // horodatage de lancement du quiz, pour le chronomètre
+  let currentSeed = null; // seed utilisée pour le quiz en cours
+  let quizRuns = []; // historique des runs validés : { score, total, seed, tempsMs, obsolete }
+  let questionStats = []; // stats par index de question : { reussites, passages, obsolete }
 
   /* ---------------------------------------------------------------
      ELEMENTS
   --------------------------------------------------------------- */
   const navEditBtn = document.getElementById('btn-nav-edit');
   const navPlayBtn = document.getElementById('btn-nav-play');
+  const navScoreBtn = document.getElementById('btn-nav-score');
   const navJsonBtn = document.getElementById('btn-nav-json');
   const viewEdit = document.getElementById('view-edit');
   const viewPlay = document.getElementById('view-play');
+  const viewScore = document.getElementById('view-score');
   const viewJson = document.getElementById('view-json');
   const themeToggleBtn = document.getElementById('theme-toggle');
 
@@ -819,11 +989,21 @@
 
   const playIntro = document.getElementById('play-intro');
   const quizCountInput = document.getElementById('quiz-count-input');
+  const quizSeedInput = document.getElementById('quiz-seed-input');
+  const seedRandomBtn = document.getElementById('seed-random-btn');
   const startQuizBtn = document.getElementById('start-quiz-btn');
+  const quizActiveBar = document.getElementById('quiz-active-bar');
+  const quizSeedDisplay = document.getElementById('quiz-seed-display');
+  const regenerateBtn = document.getElementById('regenerate-btn');
   const quizForm = document.getElementById('quiz-form');
   const quizQuestions = document.getElementById('quiz-questions');
   const quizResult = document.getElementById('quiz-result');
   const validateBtn = document.getElementById('validate-btn');
+
+  const scoreQuestionsBubbles = document.getElementById('score-questions-bubbles');
+  const scoreQuestionsEmpty = document.getElementById('score-questions-empty');
+  const scoreRunsList = document.getElementById('score-runs-list');
+  const scoreRunsEmpty = document.getElementById('score-runs-empty');
 
   /* ---------------------------------------------------------------
      NAVIGATION ENTRE LES VUES
@@ -831,21 +1011,18 @@
   function showView(name){
     viewEdit.hidden = name !== 'edit';
     viewPlay.hidden = name !== 'play';
+    viewScore.hidden = name !== 'score';
     viewJson.hidden  = name !== 'json';
     navEditBtn.classList.toggle('active', name === 'edit');
     navPlayBtn.classList.toggle('active', name === 'play');
+    navScoreBtn.classList.toggle('active', name === 'score');
     navJsonBtn.classList.toggle('active', name === 'json');
     if(name === 'json') refreshJsonEditor();
+    if(name === 'score') renderScoreTab();
   }
   navEditBtn.addEventListener('click', () => showView('edit'));
-  navPlayBtn.addEventListener('click', () => {
-    showView('play');
-    if(!quizForm.hidden && validateBtn.hidden){
-      quizForm.hidden = true;
-      quizResult.hidden = true;
-      playIntro.hidden = false;
-    }
-  });
+  navPlayBtn.addEventListener('click', () => showView('play'));
+  navScoreBtn.addEventListener('click', () => showView('score'));
   navJsonBtn.addEventListener('click', () => showView('json'));
 
   /* ---------------------------------------------------------------
@@ -883,10 +1060,24 @@
   /* ---------------------------------------------------------------
      UTILITAIRES
   --------------------------------------------------------------- */
-  function shuffle(arr){
+
+  // Générateur pseudo-aléatoire à seed (mulberry32). Fiable pour mélanger
+  // jusqu'à quelques centaines d'éléments — largement suffisant ici.
+  function createRng(seed){
+    let a = seed >>> 0;
+    return function(){
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function shuffle(arr, rng){
+    const rand = rng || Math.random;
     const a = [...arr];
     for(let i = a.length - 1; i > 0; i--){
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(rand() * (i + 1));
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
@@ -901,6 +1092,43 @@
   function autoResizeTextarea(el){
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
+  }
+
+  // Toute modification de la banque de questions (ajout, édition, suppression,
+  // import JSON) invalide l'historique des runs : ces données restent
+  // affichées (à titre de souvenir) mais grisées comme "obsolètes". Les
+  // runs ne sont pas indexés par position de question, donc pas de risque
+  // de décalage.
+  function invalidateRuns(){
+    quizRuns.forEach(r => { r.obsolete = true; });
+  }
+
+  // Les stats par question sont indexées par position dans `questions`.
+  // Cet index n'est pas stable dès qu'on ajoute/supprime une question
+  // ailleurs qu'en toute fin de liste (tout se décale) : essayer de
+  // préserver les anciens compteurs par position mènerait à attribuer le
+  // score d'une question à une autre. On repart donc franc à zéro pour
+  // toutes les questions à chaque modification.
+  function resetQuestionStats(){
+    questionStats = questions.map(() => ({ reussites: 0, passages: 0, obsolete: false }));
+  }
+
+  // Le quiz affiché à l'écran référence les anciennes questions (énoncés,
+  // bonnes réponses...) : dès que la banque change, ce quiz n'a plus de
+  // sens et pourrait être validé avec des données obsolètes. On le vide
+  // entièrement et on revient à l'écran de configuration.
+  function clearActiveQuiz(){
+    runtimeQuestions = [];
+    currentSeed = null;
+    quizStartTime = null;
+    quizQuestions.innerHTML = '';
+    quizForm.hidden = true;
+    quizResult.hidden = true;
+    quizResult.innerHTML = '';
+    quizActiveBar.hidden = true;
+    playIntro.hidden = false;
+    validateBtn.hidden = false;
+    validateBtn.textContent = 'Valider';
   }
 
   function formatDuration(ms){
@@ -1493,6 +1721,10 @@
      LISTE DES QUESTIONS (CARTES)
   --------------------------------------------------------------- */
   function renderQuestionsList(){
+    invalidateRuns();
+    resetQuestionStats();
+    clearActiveQuiz();
+
     questionCount.textContent = questions.length;
     questionsList.innerHTML = '';
 
@@ -1609,11 +1841,32 @@
     fileInput.value = '';
   });
 
-  exportBtn.addEventListener('click', () => {
+  exportBtn.addEventListener('click', async () => {
     let filename = exportFilenameInput.value.trim() || 'questions.json';
     if(!filename.toLowerCase().endsWith('.json')) filename += '.json';
 
-    const blob = new Blob([JSON.stringify({ questions }, null, 2)], { type: 'application/json' });
+    const jsonText = JSON.stringify(buildExportPayload(), null, 2);
+
+    // Navigateurs compatibles (Chrome/Edge) : vraie boîte de dialogue système
+    // "Enregistrer sous" permettant de choisir l'emplacement.
+    if(window.showSaveFilePicker){
+      try{
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'Fichier JSON', accept: { 'application/json': ['.json'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(jsonText);
+        await writable.close();
+        return;
+      } catch(err){
+        if(err.name === 'AbortError') return; // annulé par l'utilisateur, on ne fait rien
+        // sinon on retente avec la méthode de repli ci-dessous
+      }
+    }
+
+    // Repli (Firefox, Safari, ...) : téléchargement classique vers le dossier par défaut.
+    const blob = new Blob([jsonText], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1625,7 +1878,7 @@
   /* ---------------------------------------------------------------
      MODE LANCER — PREPARATION DU QUIZ
   --------------------------------------------------------------- */
-  function buildRuntimeQuestion(q, runtimeId){
+  function buildRuntimeQuestion(q, runtimeId, rng){
     let rq;
 
     if(q.type === 'texte_libre'){
@@ -1634,9 +1887,9 @@
       let trous = q.data.trous;
       let sharedOptions = null;
       if(q.data.poolPartage){
-        sharedOptions = shuffle(q.data.options);
+        sharedOptions = shuffle(q.data.options, rng);
       } else if(q.data.mode === 'menu_deroulant'){
-        trous = trous.map(t => ({ ...t, options: shuffle(t.options) }));
+        trous = trous.map(t => ({ ...t, options: shuffle(t.options, rng) }));
       }
       rq = {
         runtimeId, question: q.question, type: q.type,
@@ -1644,16 +1897,17 @@
       };
     } else if(q.type === 'ordre'){
       const correctOrder = q.data.elements;
-      let currentOrder = shuffle(correctOrder);
+      let currentOrder = shuffle(correctOrder, rng);
       let attempts = 0;
+      // évite (dans la mesure du possible) de retomber sur l'ordre déjà correct
       while(correctOrder.length > 1 && JSON.stringify(currentOrder) === JSON.stringify(correctOrder) && attempts < 5){
-        currentOrder = shuffle(correctOrder);
+        currentOrder = shuffle(currentOrder, rng);
         attempts++;
       }
       rq = { runtimeId, question: q.question, type: q.type, correctOrder, currentOrder };
     } else {
       const correctSet = q.type === 'qcm_simple' ? new Set([q.data.reponse]) : new Set(q.data.reponses);
-      const choices = shuffle(q.data.choix.map((text, i) => ({ text, correct: correctSet.has(i) })));
+      const choices = shuffle(q.data.choix.map((text, i) => ({ text, correct: correctSet.has(i) })), rng);
       rq = { runtimeId, question: q.question, type: q.type, choices };
     }
 
@@ -1696,9 +1950,27 @@
     let count = parseInt(quizCountInput.value, 10);
     if(isNaN(count) || count <= 0 || count > total) count = total;
 
-    const pool = shuffle(questions).slice(0, count);
-    runtimeQuestions = pool.map((q, i) => buildRuntimeQuestion(q, i));
+    let seed = parseInt(quizSeedInput.value, 10);
+    if(isNaN(seed)){
+      seed = Math.floor(Math.random() * 1000000000);
+      quizSeedInput.value = seed;
+    }
+    currentSeed = seed;
+    const rng = createRng(seed);
+
+    // on associe à chaque question tirée son index d'origine dans `questions`,
+    // nécessaire pour incrémenter les bonnes stats une fois le quiz validé
+    const indexed = questions.map((q, idx) => ({ q, idx }));
+    const pool = shuffle(indexed, rng).slice(0, count);
+    runtimeQuestions = pool.map((item, i) => {
+      const rq = buildRuntimeQuestion(item.q, i, rng);
+      rq.originalIndex = item.idx;
+      return rq;
+    });
     quizStartTime = Date.now();
+
+    quizSeedDisplay.textContent = `Seed : ${currentSeed}`;
+    quizActiveBar.hidden = false;
 
     quizQuestions.innerHTML = '';
     runtimeQuestions.forEach((rq, i) => {
@@ -1753,6 +2025,10 @@
   }
 
   startQuizBtn.addEventListener('click', startQuiz);
+  regenerateBtn.addEventListener('click', () => { playIntro.hidden = false; });
+  seedRandomBtn.addEventListener('click', () => {
+    quizSeedInput.value = Math.floor(Math.random() * 1000000000);
+  });
 
   // Réordonnancement (boutons haut/bas) dans la liste à ordonner du quiz
   quizQuestions.addEventListener('click', (e) => {
@@ -1834,6 +2110,11 @@
       if(isCorrect) score++;
       block.classList.add(isCorrect ? 'is-correct' : 'is-incorrect');
 
+      if(questionStats[rq.originalIndex]){
+        questionStats[rq.originalIndex].passages++;
+        if(isCorrect) questionStats[rq.originalIndex].reussites++;
+      }
+
       const feedback = document.createElement('p');
       feedback.className = 'feedback';
       feedback.textContent = isCorrect ? '✓ Correct' : `✕ Incorrect — réponse attendue : ${correctText}`;
@@ -1854,13 +2135,81 @@
       <div class="score-banner">
         <div class="score-num">${score} / ${total}</div>
         <div>${pct}% de bonnes réponses</div>
-        <div class="time-info">⏱ Temps : ${formatDuration(elapsedMs)}</div>
+        <div class="time-info">⏱ Temps : ${formatDuration(elapsedMs)} · Seed : ${currentSeed}</div>
       </div>
     `;
     quizResult.hidden = false;
     validateBtn.hidden = true;
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    quizRuns.unshift({ score, total, seed: currentSeed, tempsMs: elapsedMs, obsolete: false });
   });
+
+  /* ---------------------------------------------------------------
+     ONGLET SCORE
+  --------------------------------------------------------------- */
+
+  // Dégradé rouge -> vert selon le taux de réussite (0 à 1).
+  // Interpole dans l'espace RGB entre --incorrect et --correct.
+  function scoreColor(ratio){
+    const from = { r: 220, g: 38, b: 38 };   // rouge (#dc2626)
+    const to   = { r: 22,  g: 163, b: 74 };  // vert  (#16a34a)
+    const r = Math.round(from.r + (to.r - from.r) * ratio);
+    const g = Math.round(from.g + (to.g - from.g) * ratio);
+    const b = Math.round(from.b + (to.b - from.b) * ratio);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  function renderScoreTab(){
+    // --- colonne de gauche : une bulle par question ---
+    scoreQuestionsBubbles.innerHTML = '';
+    scoreQuestionsEmpty.hidden = questions.length > 0;
+
+    questions.forEach((q, idx) => {
+      const stat = questionStats[idx] || { reussites: 0, passages: 0, obsolete: false };
+      const bubble = document.createElement('div');
+      bubble.className = 'score-bubble';
+      bubble.title = q.question.length > 60 ? q.question.slice(0, 60) + '…' : q.question;
+
+      if(stat.obsolete) bubble.classList.add('is-obsolete');
+
+      if(stat.passages === 0){
+        bubble.classList.add('is-untested');
+        bubble.style.background = '';
+      } else {
+        const ratio = stat.reussites / stat.passages;
+        bubble.style.background = scoreColor(ratio);
+        bubble.style.color = '#fff';
+        bubble.style.borderColor = 'transparent';
+      }
+
+      bubble.innerHTML = `<span class="bubble-num">Q${idx + 1}</span><span>${stat.reussites}/${stat.passages}</span>`;
+      bubble.addEventListener('click', () => {
+        showView('edit');
+        const card = questionsList.children[idx];
+        if(card){
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.classList.add('is-highlighted');
+          setTimeout(() => card.classList.remove('is-highlighted'), 1500);
+        }
+      });
+      scoreQuestionsBubbles.appendChild(bubble);
+    });
+
+    // --- colonne de droite : historique des runs, plus récent en haut ---
+    scoreRunsList.innerHTML = '';
+    scoreRunsEmpty.hidden = quizRuns.length > 0;
+
+    quizRuns.forEach(run => {
+      const item = document.createElement('div');
+      item.className = 'run-bubble' + (run.obsolete ? ' is-obsolete' : '');
+      item.innerHTML = `
+        <span class="run-score">${run.score} / ${run.total}</span>
+        <span class="run-meta">Seed ${run.seed}<br>${formatDuration(run.tempsMs)}</span>
+      `;
+      scoreRunsList.appendChild(item);
+    });
+  }
 
   /* ---------------------------------------------------------------
      EDITEUR JSON
